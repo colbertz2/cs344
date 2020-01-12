@@ -1,0 +1,44 @@
+#!/bin/bash
+
+#######################################################
+# TITLE: matrix                                       #
+# AUTHOR: Zach Colbert                                #
+# EMAIL: colbertz@oregonstate.edu                     #
+# DESCRIPTION: Tools for manipulating and calulating  #
+#              statistics on integer matrices.        #
+# NOTES: CS 344, W 2020 (online)                      #
+#######################################################
+
+########################
+# FUNCTION DEFINITIONS #
+########################
+
+# Put some functions here
+
+# Test function prints stuff to console
+test() {
+  echo "Hello, world!"
+  exit 0
+}
+
+# Alias for usage()
+help() {
+  usage
+}
+
+# Prints usage info to console (when you've fucked up)
+usage() {
+  echo -e "Usage: $0 \033[4mOPERATION\033[0m [\033[4mARGUMENT\033[0m] ..." 1>&2
+  exit 1
+}
+
+################
+# MAIN ROUTINE #
+################
+
+# If no operation is provided, print usage info
+if [ $# -eq 0 ]; then
+  usage
+fi
+
+$1 "${@:2}"
