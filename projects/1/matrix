@@ -9,11 +9,16 @@
 # NOTES: CS 344, W 2020 (online)                      #
 #######################################################
 
+####################
+# GLOBAL VARIABLES #
+####################
+
+# Global return value of functions
+_RET=0
+
 ########################
 # FUNCTION DEFINITIONS #
 ########################
-
-# Put some functions here
 
 # Test function prints stuff to console
 test() {
@@ -23,11 +28,11 @@ test() {
 
 # Alias for usage()
 help() {
-  usage
+  _usage
 }
 
 # Prints usage info to console (when you've fucked up)
-usage() {
+_usage() {
   echo -e "Usage: $0 \033[4mOPERATION\033[0m [\033[4mARGUMENT\033[0m] ..." 1>&2
   echo -e "\nPossible operations are:" 1>&2
   echo -e "  dims \t\tPrint the dimensions of the matrix (rows cols)" 1>&2
@@ -37,7 +42,67 @@ usage() {
   echo -e "  multiply \tMultiply an (m x n) and a (n x p) matrix" 1>&2
   echo -e "  test \t\tPrints 'Hello, world!'" 1>&2
   echo -e "  help \t\tPrints this message" 1>&2
+  echo
   exit 1
+}
+
+# Check if file exists, print an error if it doesn't
+_fileExists() {
+  if [ ! -f $1 ]; then
+    echo "$1: No such file" 1>&2
+    exit 1
+  fi
+}
+
+# Check if file is readable
+_fileIsReadable() {
+  if [ ! -r $1 ]; then
+    echo "$1: File is unreadable" 1>&2
+    exit 1
+  fi
+}
+
+# Count the rows in a matrix file
+_countRows() {
+  # Init counter
+  i=0
+
+  # Loop reading all lines in file $1
+  while read line; do
+    ((i++))
+  done < $1
+
+  _RET=$i
+}
+
+# Count the columns in the first row of file $1
+_countCols() {
+  # Init counter
+  i=0
+
+  # Read a single line from the top of the file
+  read line < $1
+
+  # Loop through each element of the line
+  for el in $line; do
+    ((i++))
+  done
+
+  _RET=$i
+}
+
+# Find dimensions of a matrix in file $1
+dims() {
+  _fileExists $1
+  _fileIsReadable $1
+
+  _countRows $1
+  printf "$_RET "
+
+  _countCols $1
+  printf "$_RET\n"
+
+  exit 0
 }
 
 ################
@@ -46,7 +111,9 @@ usage() {
 
 # If no operation is provided, print usage info
 if [ $# -eq 0 ]; then
-  usage
+  _usage
 fi
 
+# Runs the function passed in $1 with remaining arguments
 $1 "${@:2}"
+

@@ -1,0 +1,14 @@
+#!/bin/bash
+
+infile='m'
+
+read line < $infile
+
+i=0
+for el in $line; do
+  echo $el
+  ((i++))
+done
+
+echo $i
+
