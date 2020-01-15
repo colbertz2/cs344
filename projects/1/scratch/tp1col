@@ -1,0 +1,17 @@
+#!/bin/bash
+
+infile="mcol"
+tempfile="$$.tmp"
+outfile="mrow"
+
+while read line; do
+  # Process 1 element in the column
+
+  # Append to tempfile
+  printf "$line\t" >> $tempfile
+done < $infile
+
+printf "\n\n" >> $tempfile
+cat $tempfile > $outfile
+rm -f $tempfile
+

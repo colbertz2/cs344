@@ -1,0 +1,19 @@
+#!/bin/bash
+
+infile="mrow"
+tempfile="$$.tmp"
+outfile="mcol"
+
+# Read a line
+read line < $infile
+
+# Write each element in the line to temp file
+for el in $line; do
+  printf "$el\n" >> $tempfile
+done
+printf "\n" >> $tempfile
+
+# Overwrite outfile with tempfile
+cat $tempfile > $outfile
+rm -f $tempfile
+
