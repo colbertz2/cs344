@@ -29,6 +29,14 @@ help() {
 # Prints usage info to console (when you've fucked up)
 usage() {
   echo -e "Usage: $0 \033[4mOPERATION\033[0m [\033[4mARGUMENT\033[0m] ..." 1>&2
+  echo -e "\nPossible operations are:" 1>&2
+  echo -e "  dims \t\tPrint the dimensions of the matrix (rows cols)" 1>&2
+  echo -e "  transpose \tTranspose matrix elements" 1>&2
+  echo -e "  mean \t\tColumn-wise mean of matrix elements" 1>&2
+  echo -e "  add \t\tAdd two m x n matrices" 1>&2
+  echo -e "  multiply \tMultiply an (m x n) and a (n x p) matrix" 1>&2
+  echo -e "  test \t\tPrints 'Hello, world!'" 1>&2
+  echo -e "  help \t\tPrints this message" 1>&2
   exit 1
 }
 
