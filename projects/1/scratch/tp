@@ -1,0 +1,50 @@
+#!/bin/bash
+
+if [ $# -lt 2 ]; then
+  echo "args!" 1>&2
+  exit 1
+fi
+
+infile=$1
+outfile=$2
+
+tempCol=".col-$$"
+temp=".tmp-$$"
+
+trap "echo -e '\nSIGINT: cleaning up and exiting' 1>&2; rm -f $temp $tempCol; exit 1" INT
+
+while [ 1 -ne 0 ]; do
+  echo "Infinite loop! Kill me, please!"
+  sleep 1
+done
+
+# Get matrix dimensions
+inDims=`matrix dims $infile`
+inRows=`echo $inDims | cut -s -d " " -f 1`
+inCols=`echo $inDims | cut -s -d " " -f 2`
+
+#echo $inDims
+#echo $inRows
+#echo $inCols
+
+# For each column in the source file
+for c in `seq 1 $inCols`; do
+  # Cut the column and save it to temp file
+  cut -s -f $c $infile > $tempCol
+
+  # Write each element in column to a tab-delim row in temp file
+  while read el; do
+    printf "$el\t" >> $temp
+  done < $tempCol
+
+  # Newline at end of each row
+  printf "\n" >> $temp
+done
+
+# Write new matrix to outfile
+cat $temp > $outfile
+
+# Print it to target file as a row
+
+rm -f $temp
+rm -f $tempCol
