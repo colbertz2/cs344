@@ -107,7 +107,7 @@ _countCols() {
 # Find dimensions of a matrix in file $1
 dims() {
   tmp="$$.tmp"
-  trap "rm -f $tmp; echo 'Signal trap: Cleaning up and exiting'; exit 1" INT HUP TERM
+  trap "rm -f $tmp; echo 'Signal trap: Cleaning up and exiting' 1>&2; exit 1" INT HUP TERM
   
   # Inspired by:
   # https://superuser.com/questions/747884/how-to-write-a-script-that-accepts-input-from-a-file-or-from-stdin
@@ -126,29 +126,22 @@ dims() {
 
 # Transpose a matrix from file and print it to stdout
 transpose() {
-  if [ $# -eq 0 ]; then
-    _usage_transpose transpose
-  fi
-  
-  _fileExists $1
-  _fileIsReadable $1
-
-  tempCol=".col-$$"
-  temp=".tmp-$$"
-
-  clean="cleaning up and exiting"
-  trap "echo -e '\nSIGINT: $clean' 1>&2; rm -f $temp $tempCol; exit 1" INT
-  trap "echo -e '\nSIGHUP: $clean' 1>&2; rm -f $temp $tempCol; exit 1" HUP
-  trap "echo -e '\nSIGTERM: $clean' 1>&2; rm -f $temp $tempCol; exit 1" TERM
+  infile="$$-in.tmp"
+  temp="$$.tmp"
+  tempCol="$$-col.tmp"
+  trap "rm -f $infile $temp $tempCol; echo 'Signal trap: Cleaning up and exiting' 1>&2; exit 1" INT HUP TERM
+  [ $# -ge 1 ] && _fileExists "$1" && _fileIsReadable "$1" && cat $1 > $infile || cat - > $infile
 
   # Get matrix dimensions
-  inDims=`matrix dims $1`
-  inRows=`echo $inDims | cut -s -d " " -f 1`
-  inCols=`echo $inDims | cut -s -d " " -f 2`
+  _countRows $infile
+  inRows=$_RET
 
+  _countCols $infile
+  inCols=$_RET
+  
   for c in `seq 1 $inCols`; do
     # Cut the column and save it to temp file
-    cut -s -f $c $1 > $tempCol
+    cut -s -f $c $infile > $tempCol
 
     # Write each element in column to a tab-delim row in temp file
     while read el; do
@@ -163,7 +156,7 @@ transpose() {
   cat $temp
 
   # Clean up
-  rm -f $temp $tempCol
+  rm -f $infile $temp $tempCol
   exit 0
 }
 
