@@ -1,0 +1,28 @@
+#!/bin/bash
+
+echo "PID: $$"
+
+_fileExists() {
+  if [ ! -f $1 ]; then
+    echo "$1: No such file" 1>&2
+    echo 1>&2
+    exit 1
+  fi
+}
+
+_fileIsReadable() {
+  if [ ! -r $1 ]; then
+    echo "$1: File is unreadable" 1>&2
+    echo 1>&2
+    exit 1
+  fi
+}
+
+tmp="$$.tmp"
+trap "rm -f $tmp; exit 1" INT HUP TERM
+
+[ $# -ge 1 ] && _fileExists "$1" && _fileIsReadable "$1" && cat $1 > $tmp || cat - > $tmp
+
+cat $tmp
+rm $tmp
+

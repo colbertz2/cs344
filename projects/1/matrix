@@ -106,18 +106,20 @@ _countCols() {
 
 # Find dimensions of a matrix in file $1
 dims() {
-  if [ $# -eq 0 ]; then
-    _usage_dims dims
-  fi
+  tmp="$$.tmp"
+  trap "rm -f $tmp; echo 'Signal trap: Cleaning up and exiting'; exit 1" INT HUP TERM
+  
+  # Inspired by:
+  # https://superuser.com/questions/747884/how-to-write-a-script-that-accepts-input-from-a-file-or-from-stdin
+  [ $# -ge 1 ] && _fileExists "$1" && _fileIsReadable "$1" && cat $1 > $tmp || cat - > $tmp
 
-  _fileExists $1
-  _fileIsReadable $1
-
-  _countRows $1
+  _countRows $tmp
   printf "$_RET "
 
-  _countCols $1
+  _countCols $tmp
   printf "$_RET\n"
+
+  rm -f $tmp
 
   exit 0
 }
