@@ -104,7 +104,7 @@ _countCols() {
   _RET=$i
 }
 
-# Find dimensions of a matrix in file $1
+# Returns dimensions of the given matrix (rows cols)
 dims() {
   tmp="$$.tmp"
   trap "rm -f $tmp; echo 'Signal trap: Cleaning up and exiting' 1>&2; exit 1" INT HUP TERM
@@ -124,7 +124,7 @@ dims() {
   exit 0
 }
 
-# Transpose a matrix from file and print it to stdout
+# Transposes a given matrix along the diagonal
 transpose() {
   infile="$$-in.tmp"
   temp="$$.tmp"
@@ -144,8 +144,13 @@ transpose() {
     cut -s -f $c $infile > $tempCol
 
     # Write each element in column to a tab-delim row in temp file
+    count=1
     while read el; do
-      printf "$el\t" >> $temp
+      printf "$el" >> $temp
+      if [ $count -lt $inRows ]; then
+        printf "\t" >> $temp
+      fi
+      count=`expr $count + 1`
     done < $tempCol
 
     # Newline at end of each row
@@ -153,10 +158,64 @@ transpose() {
   done
 
   # echo new matrix
-  cat $temp
+  cat -A $temp
 
   # Clean up
   rm -f $infile $temp $tempCol
+  exit 0
+}
+
+# Returns the column-wise mean of a given matrix as a row vector
+mean() {
+  infile="$$-in.tmp"
+  temp="$$.tmp"
+  outfile="$$-out.tmp"
+  trap "rm -f $infile $temp $outfile; echo 'Signal trap: Cleaning up and exiting' 1>&2; exit 1" INT HUP TERM
+  [ $# -ge 1 ] && _fileExists "$1" && _fileIsReadable "$1" && cat $1 > $infile || cat - > $infile
+
+  # Get matrix dimensions
+  _countRows $infile
+  inr=$_RET
+
+  _countCols $infile
+  inc=$_RET
+
+  for c in `seq 1 $inc`; do
+    # Cut the column and save it to temp file
+    cut -s -f $c $infile > $temp
+
+    # Sum all the elements of the column
+    sum=0
+    count=0
+    while read el; do
+      echo $el
+      sum=`expr $sum + $el`
+      count=`expr $count + 1`
+    done < $temp
+    
+    echo "Sum: $sum"
+    echo "Count: $count"
+
+    # Divide by number of elements 
+    avg=`expr \( $sum + \( $count / 2 \) \* \( \( $sum \> 0 \) \* 2 - 1 \) \) / $count`
+
+    # Write result to temp file
+    echo $avg >> $outfile
+  done
+
+  # Transpose results from temp file to a row
+  count=1
+  while read el; do
+    printf "$el"
+    if [ $count -lt $inc ]; then
+      printf "\t"
+    fi
+    count=`expr $count + 1`
+  done < $outfile
+  printf "\n"
+
+  # Clean up
+  rm -f $infile $temp $outfile
   exit 0
 }
 

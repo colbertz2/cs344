@@ -1,0 +1,12 @@
+#!/bin/bash
+
+sum=0
+count=0
+for i in `seq 1 4`; do
+  sum=`expr $i + $sum`
+  count=$i
+done
+
+avg=`expr \( $sum + \( $count / 2 \) \* \( \( $sum \> 0 \) \* 2 - 1 \) \) / $count`
+echo $avg
+

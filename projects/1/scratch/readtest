@@ -1,0 +1,15 @@
+#!/bin/bash
+
+infile="mcol"
+temp="$$.tmp"
+
+read el < $infile
+printf $el > $temp
+while read el; do
+  printf "\t$el" >> $temp
+done < $infile
+printf "\n" >> $temp
+
+cat $temp
+
+exit 0
