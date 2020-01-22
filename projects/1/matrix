@@ -46,15 +46,10 @@ _usage() {
   exit 1
 }
 
-_usage_dims() {
-  echo -e "Usage: $0 $1 [\033[4mMATRIX\033[0m]" 1>&2
+_usage2() {
+  echo -e "Usage: $0 $1 \033[4mMATRIX_LEFT\033[0m \033[4mMATRIX_RIGHT\033[0m" 1>&2
   echo 1>&2
   exit 1
-}
-
-_usage_transpose() {
-  # Same as _usage_dims
-  _usage_dims $1
 }
 
 # Check if file exists, print an error if it doesn't
@@ -216,6 +211,79 @@ mean() {
 
   # Clean up
   rm -f $infile $temp $outfile
+  exit 0
+}
+
+# Add two matrices (of the same dimensions) together
+add() {
+  # Require 2 arguments to this function
+  if [ $# -lt 2 ]; then
+    _usage2 "add"
+  fi
+
+  # Check dimensions of each input matrix
+  _countRows $1
+  inr1=$_RET
+  _countCols $1
+  inc1=$_RET
+
+  _countRows $2
+  inr2=$_RET
+  _countCols $2
+  inc2=$_RET
+
+  # Require matrix dims match
+  if [ $inr1 -ne $inr2 ] || [ $inc1 -ne $inc2 ]; then
+    echo "Fatal: Matrix dimensions do not match" 1>&2
+    echo 1>&2
+    exit 1
+  fi
+
+  # Set up temp file and signal trap
+  tmp="$$.tmp"
+  tmpR1="$$-row1.tmp"
+  tmpR2="$$-row2.tmp"
+  trap "rm -f $tmp $tmpR1 $tmpR2; echo 'Signal trap: Cleaning up and exiting' 1>&2; exit 1" INT HUP TERM
+  
+  # For each row of the two input files
+  # (Redirects file $1 to stdin, and file $2 to file descriptor 3)
+  rowCount=0
+  while read r1 && read r2 <&3; do
+    rowCount=`expr $count + 1`
+
+    # Write rows to respective temp files
+    printf "$r1\n" > $tmpR1
+    printf "$r2\n" > $tmpR2
+    
+    # For each column in the row
+    for c in `seq 1 $inc1`; do
+      # Cut an element from each file
+      el1=`cut -s -f $c $tmpR1`
+      el2=`cut -s -f $c $tmpR2`
+
+      # Sum elements
+      sum=`expr $el1 + $el2`
+
+      # Print sum to results file
+      printf "$sum" >> $tmp
+
+      # Print appropriate whitespace
+      if [ $c -lt $inc1 ]; then
+        printf "\t" >> $tmp
+      fi
+    done
+    
+    # Newline at end of each row
+    printf "\n" >> $tmp
+
+  done < $1 3< $2
+
+  # Print results to stdout
+  cat $tmp
+
+  # Clean up
+  rm -f $tmp $tmpR1 $tmpR2
+
   exit 0
 }
 

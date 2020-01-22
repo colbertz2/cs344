@@ -1,0 +1,12 @@
+#!/bin/bash
+
+file1="m1"
+file2="m2"
+
+count=1
+while read r1 && read r2 <&3; do
+  printf "$count:\t$r1\t$r2\n"
+  count=`expr $count + 1`
+done < $file1 3< $file2
+
+exit 0
