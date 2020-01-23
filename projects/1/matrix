@@ -153,7 +153,7 @@ transpose() {
   done
 
   # echo new matrix
-  cat -A $temp
+  cat $temp
 
   # Clean up
   rm -f $infile $temp $tempCol
@@ -306,7 +306,7 @@ multiply() {
   # Check dimensions of each input matrix
   _countRows $1
   inr1=$_RET
-  _countCols$1
+  _countCols $1
   inc1=$_RET
   
   _countRows $2
@@ -314,8 +314,8 @@ multiply() {
   _countCols $2
   inc2=$_RET
 
-  # Require matrix dims (M x N) * (N x M)
-  if [ $inr1 -ne $inc2 ] || [ $inc1 -ne $inr2 ]; then
+  # Require matrix dims (M x N) * (N x P)
+  if [ $inc1 -ne $inr2 ]; then
     echo "Fatal: Matrix dimensions do not match" 1>&2
     echo 1>&2
     exit 1
@@ -330,10 +330,49 @@ multiply() {
   # Let first input be A
   # Let second input be B
   # For each row in A
+  rowCount=0
   while read rowA; do
-    # Save the row to temp file a
+    rowCount=`expr $rowCount + 1`
+
+    # Save the row to temp file a and transpose
+    printf "$rowA\n" > $tmpA
+    $0 transpose $tmpA > $tmpB
+    mv $tmpB $tmpA
+
+    # For each column in B
+    for c in `seq 1 $inc2`; do
+      # Cut the corresponding column from B
+      colB=`cut -f $c $2`
+
+      # Write the column to temp file b
+      printf "$colB\n" > $tmpB
+
+      # Use stdin and file descriptor 3 to read from tmpA and tmpB simultaneously
+      # For each element in temp files
+      result=0
+      while read el1 && read el2 <&3; do
+        echo "Element multiplication loop" 1>&2
+        echo "$el1 * $el2" 1>&2
+        # Multiply elements together and add to result
+        result=`expr \( $el1 \* $el2 \) + $result`
+      done < $tmpA 3< $tmpB
+      echo "Post loop" 1>&2
+      # Result makes one element in the final array
+      printf "$result" >> $tmp
+
+      # Print appropriate whitespace
+      if [ $c -lt $inc2 ]; then
+        printf "\t" >> $tmp
+      fi
+    done
+
+    # Newline at end of each row
+    printf "\n" >> $tmp
 
   done < $1
+
+  # Print resulting array to stdout
+  cat $tmp
 
   # Clean up
   rm -f $tmp $tmpA $tmpB
