@@ -116,10 +116,10 @@ dims() {
   [ $# -eq 1 ] && _fileExists "$1" && _fileIsReadable "$1" && cat $1 > $tmp || cat - > $tmp
 
   _countRows $tmp
-  printf "$_RET "
+  printf "%d " $_RET
 
   _countCols $tmp
-  printf "$_RET\n"
+  printf "%d\n" $_RET
 
   rm -f $tmp
 
@@ -217,7 +217,7 @@ mean() {
   # Transpose results from temp file to a row
   count=1
   while read el; do
-    printf "$el"
+    printf "%d" $el
     if [ $count -lt $inc ]; then
       printf "\t"
     fi
@@ -271,8 +271,8 @@ add() {
   # (Redirects file $1 to stdin, and file $2 to file descriptor 3)
   while read r1 && read r2 <&3; do
     # Write rows to respective temp files
-    printf "$r1\n" > $tmpR1
-    printf "$r2\n" > $tmpR2
+    printf "%s\n" $r1 > $tmpR1
+    printf "%s\n" $r2 > $tmpR2
     
     # For each column in the row
     for c in `seq 1 $inc1`; do
@@ -284,7 +284,7 @@ add() {
       sum=`expr $el1 + $el2`
 
       # Print sum to results file
-      printf "$sum" >> $tmp
+      printf "%d" $sum >> $tmp
 
       # Print appropriate whitespace
       if [ $c -lt $inc1 ]; then
@@ -351,7 +351,7 @@ multiply() {
     rowCount=`expr $rowCount + 1`
 
     # Save the row to temp file a and transpose
-    printf "$rowA\n" > $tmpA
+    printf "%s\n" $rowA > $tmpA
     $0 transpose $tmpA > $tmpB
     mv $tmpB $tmpA
 
@@ -361,7 +361,7 @@ multiply() {
       colB=`cut -f $c $2`
 
       # Write the column to temp file b
-      printf "$colB\n" > $tmpB
+      printf "%s\n" $colB > $tmpB
 
       # Use stdin and file descriptor 3 to read from tmpA and tmpB simultaneously
       # For each element in temp files
@@ -374,7 +374,7 @@ multiply() {
       done < $tmpA 3< $tmpB
       echo "Post loop" 1>&2
       # Result makes one element in the final array
-      printf "$result" >> $tmp
+      printf "%d" $result >> $tmp
 
       # Print appropriate whitespace
       if [ $c -lt $inc2 ]; then
