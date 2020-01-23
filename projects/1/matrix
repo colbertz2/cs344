@@ -46,6 +46,12 @@ _usage() {
   exit 1
 }
 
+_usage1() {
+  echo -e "Usage: $0 $1 [\033[4mMATRIX\033[0m]" 1>&2
+  echo 1>&2
+  exit 1
+}
+
 _usage2() {
   echo -e "Usage: $0 $1 \033[4mMATRIX_LEFT\033[0m \033[4mMATRIX_RIGHT\033[0m" 1>&2
   echo 1>&2
@@ -106,7 +112,8 @@ dims() {
   
   # Inspired by:
   # https://superuser.com/questions/747884/how-to-write-a-script-that-accepts-input-from-a-file-or-from-stdin
-  [ $# -ge 1 ] && _fileExists "$1" && _fileIsReadable "$1" && cat $1 > $tmp || cat - > $tmp
+  if [ $# -gt 1 ]; then _usage1 "dims"; fi
+  [ $# -eq 1 ] && _fileExists "$1" && _fileIsReadable "$1" && cat $1 > $tmp || cat - > $tmp
 
   _countRows $tmp
   printf "$_RET "
@@ -125,7 +132,9 @@ transpose() {
   temp="$$.tmp"
   tempCol="$$-col.tmp"
   trap "rm -f $infile $temp $tempCol; echo 'Signal trap: Cleaning up and exiting' 1>&2; exit 1" INT HUP TERM
-  [ $# -ge 1 ] && _fileExists "$1" && _fileIsReadable "$1" && cat $1 > $infile || cat - > $infile
+
+  if [ $# -gt 1 ]; then _usage1 "transpose"; fi
+  [ $# -eq 1 ] && _fileExists "$1" && _fileIsReadable "$1" && cat $1 > $infile || cat - > $infile
 
   # Get matrix dimensions
   _countRows $infile
@@ -136,19 +145,26 @@ transpose() {
   
   for c in `seq 1 $inCols`; do
     # Cut the column and save it to temp file
-    cut -s -f $c $infile > $tempCol
+    cut -f $c $infile > $tempCol
+    
+    #echo "=== COLUMN $c ==="
+    #cat $tempCol
 
     # Write each element in column to a tab-delim row in temp file
     count=1
     while read el; do
-      printf "$el" >> $temp
+      #echo "Element-wise: "
+      #printf "%d" $el
+      printf "%d" $el >> $temp
       if [ $count -lt $inRows ]; then
+        #printf "\t"
         printf "\t" >> $temp
       fi
       count=`expr $count + 1`
     done < $tempCol
 
     # Newline at end of each row
+    #printf "\n"
     printf "\n" >> $temp
   done
 
