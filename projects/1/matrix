@@ -133,7 +133,10 @@ transpose() {
   tempCol="$$-col.tmp"
   trap "rm -f $infile $temp $tempCol; echo 'Signal trap: Cleaning up and exiting' 1>&2; exit 1" INT HUP TERM
 
+  # Require no more than 1 argument
   if [ $# -gt 1 ]; then _usage1 "transpose"; fi
+
+  # Check if file is readable OR take input from stdin
   [ $# -eq 1 ] && _fileExists "$1" && _fileIsReadable "$1" && cat $1 > $infile || cat - > $infile
 
   # Get matrix dimensions
@@ -143,21 +146,16 @@ transpose() {
   _countCols $infile
   inCols=$_RET
   
+  # For each column
   for c in `seq 1 $inCols`; do
     # Cut the column and save it to temp file
     cut -f $c $infile > $tempCol
     
-    #echo "=== COLUMN $c ==="
-    #cat $tempCol
-
     # Write each element in column to a tab-delim row in temp file
     count=1
     while read el; do
-      #echo "Element-wise: "
-      #printf "%d" $el
       printf "%d" $el >> $temp
       if [ $count -lt $inRows ]; then
-        #printf "\t"
         printf "\t" >> $temp
       fi
       count=`expr $count + 1`
@@ -182,6 +180,11 @@ mean() {
   temp="$$.tmp"
   outfile="$$-out.tmp"
   trap "rm -f $infile $temp $outfile; echo 'Signal trap: Cleaning up and exiting' 1>&2; exit 1" INT HUP TERM
+
+  # Require no more than 1 argument
+  if [ $# -gt 1 ]; then _usage1 "mean"; fi
+
+  # Check if file is readable OR take input from stdin
   [ $# -ge 1 ] && _fileExists "$1" && _fileIsReadable "$1" && cat $1 > $infile || cat - > $infile
 
   # Get matrix dimensions
@@ -191,6 +194,7 @@ mean() {
   _countCols $infile
   inc=$_RET
 
+  # for each column
   for c in `seq 1 $inc`; do
     # Cut the column and save it to temp file
     cut -f $c $infile > $temp
@@ -199,22 +203,18 @@ mean() {
     sum=0
     count=0
     while read el; do
-      #echo $el
       sum=`expr $sum + $el`
       count=`expr $count + 1`
     done < $temp
     
-    #echo "Sum: $sum"
-    #echo "Count: $count"
-
-    # Divide by number of elements 
+    # Divide by number of elements, round according to program requirements 
     avg=`expr \( $sum + \( $count / 2 \) \* \( \( $sum \> 0 \) \* 2 - 1 \) \) / $count`
 
     # Write result to temp file
     echo $avg >> $outfile
   done
 
-  # Transpose results from temp file to a row
+  # Transpose results from temp file to a row, send directly to stdout
   count=1
   while read el; do
     printf "%d" $el
@@ -273,14 +273,6 @@ add() {
     # Write rows to respective temp files
     printf "%b\t" $r1 > $tmpR1
     printf "%b\t" $r2 > $tmpR2
-
-    #printf "CURRENT ROW 1: "
-    #cat -A $tmpR1
-    #printf "\n"
-
-    #printf "CURRENT ROW 2: "
-    #cat -A $tmpR2
-    #printf "\n"
 
     # For each column in the row
     for c in `seq 1 $inc1`; do
@@ -360,8 +352,6 @@ multiply() {
 
     # Save the row to temp file a and transpose
     printf "%b\n" $rowA > $tmpA
-    #$0 transpose $tmpA > $tmpB
-    #mv $tmpB $tmpA
 
     # For each column in B
     for c in `seq 1 $inc2`; do
@@ -371,26 +361,18 @@ multiply() {
       # Write the column to temp file b
       printf "%b\n" $colB > $tmpB
 
-      # DEBUGGING
-      #printf "\t"
-      #cat $tmpB
-      #printf "\n"
-      #cat $tmpA
-
       # Use stdin and file descriptor 3 to read from tmpA and tmpB simultaneously
       # For each element in temp files
       result=0
       while read el1 && read el2 <&3; do
-        #echo "Element multiplication loop" 1>&2
-        #echo "$el1 * $el2" 1>&2
         # Multiply elements together and add to result
         result=`expr \( $el1 \* $el2 \) + $result`
       done < $tmpA 3< $tmpB
-      #echo "Post loop" 1>&2
+      
       # Result makes one element in the final array
       printf "%d" $result >> $tmp
 
-      # Print appropriate whitespace
+      # Print tabs between elements only, not at end of line
       if [ $c -lt $inc2 ]; then
         printf "\t" >> $tmp
       fi
