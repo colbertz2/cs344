@@ -271,9 +271,17 @@ add() {
   # (Redirects file $1 to stdin, and file $2 to file descriptor 3)
   while read r1 && read r2 <&3; do
     # Write rows to respective temp files
-    printf "%s\n" $r1 > $tmpR1
-    printf "%s\n" $r2 > $tmpR2
-    
+    printf "%b\t" $r1 > $tmpR1
+    printf "%b\t" $r2 > $tmpR2
+
+    #printf "CURRENT ROW 1: "
+    #cat -A $tmpR1
+    #printf "\n"
+
+    #printf "CURRENT ROW 2: "
+    #cat -A $tmpR2
+    #printf "\n"
+
     # For each column in the row
     for c in `seq 1 $inc1`; do
       # Cut an element from each file
@@ -351,9 +359,9 @@ multiply() {
     rowCount=`expr $rowCount + 1`
 
     # Save the row to temp file a and transpose
-    printf "%s\n" $rowA > $tmpA
-    $0 transpose $tmpA > $tmpB
-    mv $tmpB $tmpA
+    printf "%b\n" $rowA > $tmpA
+    #$0 transpose $tmpA > $tmpB
+    #mv $tmpB $tmpA
 
     # For each column in B
     for c in `seq 1 $inc2`; do
@@ -361,18 +369,24 @@ multiply() {
       colB=`cut -f $c $2`
 
       # Write the column to temp file b
-      printf "%s\n" $colB > $tmpB
+      printf "%b\n" $colB > $tmpB
+
+      # DEBUGGING
+      #printf "\t"
+      #cat $tmpB
+      #printf "\n"
+      #cat $tmpA
 
       # Use stdin and file descriptor 3 to read from tmpA and tmpB simultaneously
       # For each element in temp files
       result=0
       while read el1 && read el2 <&3; do
-        echo "Element multiplication loop" 1>&2
-        echo "$el1 * $el2" 1>&2
+        #echo "Element multiplication loop" 1>&2
+        #echo "$el1 * $el2" 1>&2
         # Multiply elements together and add to result
         result=`expr \( $el1 \* $el2 \) + $result`
       done < $tmpA 3< $tmpB
-      echo "Post loop" 1>&2
+      #echo "Post loop" 1>&2
       # Result makes one element in the final array
       printf "%d" $result >> $tmp
 
