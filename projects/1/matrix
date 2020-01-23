@@ -221,6 +221,12 @@ add() {
     _usage2 "add"
   fi
 
+  # Check files exist and are readable
+  _fileExists $1
+  _fileExists $2
+  _fileIsReadable $1
+  _fileIsReadable $2
+
   # Check dimensions of each input matrix
   _countRows $1
   inr1=$_RET
@@ -247,10 +253,7 @@ add() {
   
   # For each row of the two input files
   # (Redirects file $1 to stdin, and file $2 to file descriptor 3)
-  rowCount=0
   while read r1 && read r2 <&3; do
-    rowCount=`expr $count + 1`
-
     # Write rows to respective temp files
     printf "$r1\n" > $tmpR1
     printf "$r2\n" > $tmpR2
@@ -283,6 +286,57 @@ add() {
 
   # Clean up
   rm -f $tmp $tmpR1 $tmpR2
+
+  exit 0
+}
+
+# Multiply two matrices (of the same dimensions)
+multiply() {
+  # Require 2 arguments to this function
+  if [ $# -lt 2 ]; then
+    _usage2 "multiply"
+  fi
+
+  # Check files exist and are readable
+  _fileExists $1
+  _fileExists $2
+  _fileIsReadable $1
+  _fileIsReadable $2
+
+  # Check dimensions of each input matrix
+  _countRows $1
+  inr1=$_RET
+  _countCols$1
+  inc1=$_RET
+  
+  _countRows $2
+  inr2=$_RET
+  _countCols $2
+  inc2=$_RET
+
+  # Require matrix dims (M x N) * (N x M)
+  if [ $inr1 -ne $inc2 ] || [ $inc1 -ne $inr2 ]; then
+    echo "Fatal: Matrix dimensions do not match" 1>&2
+    echo 1>&2
+    exit 1
+  fi
+
+  # Set up temp files and signal trap
+  tmp="$$.tmp"
+  tmpA="$$-a.tmp"
+  tmpB="$$-b.tmp"
+  trap "rm -f $tmp $tmpA $tmpB; echo 'Signal trap: Cleaning up and exiting' 1>&2; exit 1" INT HUP TERM
+
+  # Let first input be A
+  # Let second input be B
+  # For each row in A
+  while read rowA; do
+    # Save the row to temp file a
+
+  done < $1
+
+  # Clean up
+  rm -f $tmp $tmpA $tmpB
 
   exit 0
 }
