@@ -1,0 +1,6 @@
+#! /usr/bin/python3
+
+arr = ['x', 'b', 'c']
+
+for i, f in enumerate(arr):
+    print(i, f)
