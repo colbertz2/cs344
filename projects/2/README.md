@@ -3,10 +3,13 @@
 Implement a text adventure game.
 
 ## Specifications
+Source file: `colbertz.buildrooms.c`
+Binary: `colbertz.buildrooms`
+
 ### Room Generator Program
-(1) Create a directory _colbertz.rooms.PID_
-(2) Generate 7 room files with hard-coded names
-(3) Populate room data to files
+1. Create a directory _colbertz.rooms.PID_
+2. Generate 7 room files with hard-coded names
+3. Populate room data to files
 
 #### Room Specifications
 [Notes about code planning and room generation](https://oregonstate.instructure.com/courses/1780106/pages/2-dot-2-program-outlining-in-program-2)
