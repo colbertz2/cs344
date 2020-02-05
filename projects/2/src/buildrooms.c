@@ -195,30 +195,118 @@ int room_allowOutbound(struct room* r) {
   //
 }
 
-// Return 1 if rooms are already connected, 0 otherwise
+/*****************************************************************************
+ * Return 1 if rooms are already connected, 0 otherwise
+ * 
+ * PARAMS
+ *    struct room *a, *b - Pointers to rooms that should be checked.
+ * 
+ * RETURNS
+ *    int - 1 if connected, 0 if not
+ * 
+ * PRECONDITIONS
+ *    None
+ *****************************************************************************/
 int room_isConnected(struct room* a, struct room* b) {
+  //
 }
 
-// Connect two rooms (without validation)
+/*****************************************************************************
+ * Connect two rooms (without validation). Ensures mutual connection between
+ * rooms and increments connection counter for each room object.
+ * 
+ * PARAMS
+ *    struct room *a, *b - Pointers to rooms that should be connected.
+ * 
+ * RETURNS
+ *    None
+ * 
+ * PRECONDITIONS
+ *    Rooms should not already be connected.
+ *    Check to see if outbound connections are allowed before calling.
+ *****************************************************************************/
 void room_connect(struct room* a, struct room* b) {
+  //
 }
 
-// Return 1 if rooms are the same (equality comparison)
+/*****************************************************************************
+ * Return 1 if rooms are the same (equality comparison).
+ * 
+ * PARAMS
+ *    struct room *a, *b - Rooms to be compared
+ * 
+ * RETURNS
+ *    int - 1 if rooms are the same, 0 if not
+ * 
+ * PRECONDITIONS
+ *    None
+ *****************************************************************************/
 int room_cmp(struct room* a, struct room* b) {
 }
 
-// Given a file descriptor, write contents of struct to a room file
+/*****************************************************************************
+ * Given a file descriptor, write contents of struct to a room file.
+ * 
+ * PARAMS
+ *    struct room* r - Room from which properties should be written.
+ *    int - C file descriptor
+ * 
+ * RETURNS
+ *    None
+ * 
+ * PRECONDITIONS
+ *    Properties of room struct must be initialized.
+ *    File descriptor must be open for writing.
+ *****************************************************************************/
 void room_export(struct room* r, int fd) {
+  //
 }
 
-// Return 1 if all rooms have 3-6 outbound connections, 0 otherwise
+/*****************************************************************************
+ * Return 1 if all rooms have 3-6 outbound connections, 0 otherwise.
+ * 
+ * PARAMS
+ *    struct room** arr - Pointer to head of array containing room pointers
+ * 
+ * RETURNS
+ *    int - 1 if all rooms have 3-6 outbound connections, 0 if not
+ * 
+ * PRECONDITIONS
+ *    arr must have size ROOM_COUNT
+ *****************************************************************************/
 int map_isfull(struct room** arr) {
+  //
 }
 
-// Loop until map is full, creating random room connections
+/*****************************************************************************
+ * Loop until map is full, creating random room connections.
+ * 
+ * PARAMS
+ *    struct room** arr - Pointer to head of array containing room pointers
+ * 
+ * RETURNS
+ *    None
+ * 
+ * PRECONDITIONS
+ *    arr must have size ROOM_COUNT.
+ *    Run srand() in main function before calling this method.
+ *****************************************************************************/
 void map_$fill(struct room** arr) {
+  //
 }
 
-// Assign start, end, mid room types
+/*****************************************************************************
+ * Assign start, end, mid room types.
+ * 
+ * PARAMS
+ *    struct room** arr - Pointer to head of array of room pointers.
+ * 
+ * RETURNS
+ *    None
+ * 
+ * PRECONDITIONS
+ *    arr must have size ROOM_COUNT.
+ *    Run srand() in main function before calling this method.
+ *****************************************************************************/
 void map_$setTypes(struct room** arr) {
 }
