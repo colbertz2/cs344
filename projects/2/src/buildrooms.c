@@ -18,6 +18,7 @@
 #include <string.h>
 #include <unistd.h>
 #include <assert.h>
+#include <fcntl.h>
 
 
 /***********************
@@ -95,7 +96,7 @@ void room_connect(struct room*, struct room*);
 int room_cmp(struct room*, struct room*);
 
 // Given a file descriptor, write contents of struct to a room file
-void room_export(struct room*, int);
+int room_export(struct room*, int);
 
 // Return 1 if all rooms have 3-6 outbound connections, 0 otherwise
 int map_isfull(struct room**);
@@ -112,7 +113,8 @@ void map_$setTypes(struct room**);
  ****************/
 
 int main() {
-  int i;
+  int i, fd;
+  char fname[20];
   struct room *rooms[ROOM_COUNT], *r;
 
   printf("Starting PID %d\n\n", getpid());
@@ -127,8 +129,17 @@ int main() {
     printf("Room %d with name %s\n", room_get(rooms, i)->id, room_get(rooms, i)->name);
   }
 
-  r = room_$get(rooms);
-  printf("Random Room %d with name %s\n", r->id, r->name);
+  for (i = 0; i < ROOM_COUNT; i++) {
+    r = rooms[(i + 1) % ROOM_COUNT];
+    room_connect(rooms[i], r);
+
+    strcpy(rooms[i]->type, "test");
+    
+    sprintf(fname, "%s.room", rooms[i]->name);
+    fd = open(fname, O_CREAT | O_TRUNC | O_WRONLY, 0644);
+    room_export(rooms[i], fd);
+    close(fd);
+  }
 
   for (i = 0; i < ROOM_COUNT; i++) { room_free(rooms[i]); }
 
@@ -242,10 +253,12 @@ struct room* room_$get(struct room** arr) {
  *    int - 1 if outbound connections are allowed, 0 if not
  * 
  * PRECONDITIONS
- *    None
+ *    r must not be NULL
  *****************************************************************************/
 int room_allowOutbound(struct room* r) {
-  //
+  assert(r);
+  if (r->pathcount < 6) { return 1; }
+  return 0;
 }
 
 /*****************************************************************************
@@ -261,7 +274,15 @@ int room_allowOutbound(struct room* r) {
  *    None
  *****************************************************************************/
 int room_isConnected(struct room* a, struct room* b) {
-  //
+  int i;
+
+  // Loop through paths on a
+  for (i = 0; i < a->pathcount; i++) {
+    // If path pointer from a is equal to b, return 1
+    if (room_cmp(a->paths[i], b)) { return 1; }
+  }
+
+  return 0;
 }
 
 /*****************************************************************************
@@ -277,9 +298,19 @@ int room_isConnected(struct room* a, struct room* b) {
  * PRECONDITIONS
  *    Rooms should not already be connected.
  *    Check to see if outbound connections are allowed before calling.
+ *    a and b must not be NULL.
  *****************************************************************************/
 void room_connect(struct room* a, struct room* b) {
-  //
+  assert(a);
+  assert(b);
+
+  // Draw a connection from a to b
+  a->paths[a->pathcount] = b;
+  a->pathcount++;
+
+  // Draw a connection from b to a
+  b->paths[b->pathcount] = a;
+  b->pathcount++;
 }
 
 /*****************************************************************************
@@ -292,9 +323,25 @@ void room_connect(struct room* a, struct room* b) {
  *    int - 1 if rooms are the same, 0 if not
  * 
  * PRECONDITIONS
- *    None
+ *    a,b must not be NULL
  *****************************************************************************/
 int room_cmp(struct room* a, struct room* b) {
+  assert(a);
+  assert(b);
+
+  int ti, tn, tt;
+
+  // Simple test: If pointers are the same, return 1
+  if (a == b) { return 1; }
+
+  // If other properties match, return 1
+  ti = a->id == b->id;
+  if (strcmp(a->name, b->name) == 0) { tn = 1; }
+  if (strcmp(a->type, b->type) == 0) { tt = 1; }
+
+  if (ti && tn && tt) { return 1; }
+
+  return 0;
 }
 
 /*****************************************************************************
@@ -305,14 +352,42 @@ int room_cmp(struct room* a, struct room* b) {
  *    int - C file descriptor
  * 
  * RETURNS
- *    None
+ *    int - file descriptor after writing
  * 
  * PRECONDITIONS
  *    Properties of room struct must be initialized.
  *    File descriptor must be open for writing.
+ *    r must not be NULL
  *****************************************************************************/
-void room_export(struct room* r, int fd) {
-  //
+int room_export(struct room* r, int fd) {
+  assert(r);
+
+  int i, line_max = 14 + NAME_MAX_LENGTH + 1;
+  char outstr[line_max];
+
+  // Initialize write buffer
+  memset(outstr, '\0', line_max * sizeof(char));
+
+  // Write room name to file
+  sprintf(outstr, "ROOM NAME: %s\n", r->name);
+  write(fd, outstr, strlen(outstr) * sizeof(char));
+
+  // Write room connections to file
+  for (i = 0; i < r->pathcount; i++) {
+    // Reinitialize buffer
+    memset(outstr, '\0', strlen(outstr) * sizeof(char));
+
+    sprintf(outstr, "CONNECTION %d: %s\n", i + 1, r->paths[i]->name);
+    write(fd, outstr, strlen(outstr) * sizeof(char));
+  }
+
+  // Write room type to file
+  memset(outstr, '\0', strlen(outstr) * sizeof(char));
+
+  sprintf(outstr, "ROOM TYPE: %s\n", r->type);
+  write(fd, outstr, strlen(outstr) * sizeof(char));
+
+  return fd;
 }
 
 /*****************************************************************************
