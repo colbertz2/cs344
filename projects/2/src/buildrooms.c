@@ -52,7 +52,7 @@ char NAMESPACE[NAMESPACE_SIZE][NAME_MAX_LENGTH] = {
   "lounge",
   "dinerm",
   "cellar"
-}
+};
 
 
 /***********************
@@ -102,7 +102,7 @@ void map_$setTypes(struct room**);
 
 int main() {
   // Coming soon!
-  return 0
+  return 0;
 }
 
 
@@ -196,29 +196,29 @@ int room_allowOutbound(struct room* r) {
 }
 
 // Return 1 if rooms are already connected, 0 otherwise
-int room_isConnected(struct room*, struct room*) {
+int room_isConnected(struct room* a, struct room* b) {
 }
 
 // Connect two rooms (without validation)
-void room_connect(struct room*, struct room*) {
+void room_connect(struct room* a, struct room* b) {
 }
 
 // Return 1 if rooms are the same (equality comparison)
-int room_cmp(struct room*, struct room*) {
+int room_cmp(struct room* a, struct room* b) {
 }
 
 // Given a file descriptor, write contents of struct to a room file
-void room_export(struct room*, int) {
+void room_export(struct room* r, int fd) {
 }
 
 // Return 1 if all rooms have 3-6 outbound connections, 0 otherwise
-int map_isfull(struct room**) {
+int map_isfull(struct room** arr) {
 }
 
 // Loop until map is full, creating random room connections
-void map_$fill(struct room**) {
+void map_$fill(struct room** arr) {
 }
 
 // Assign start, end, mid room types
-void map_$setTypes(struct room**) {
+void map_$setTypes(struct room** arr) {
 }
