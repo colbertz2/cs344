@@ -403,7 +403,22 @@ int room_export(struct room* r, int fd) {
  *    arr must have size ROOM_COUNT
  *****************************************************************************/
 int map_isfull(struct room** arr) {
-  //
+  struct room *r;
+  int i, out;
+  char* warnstr = "WARNING: Room %d named %s has >6 connections!\n";
+
+  for (i = 0; i < ROOM_COUNT; i++) {
+    r = arr[i];
+    out = r->pathcount;     // Number of outbound connections from this room
+
+    // Warning for developer if too many connections
+    if (out > 6) { fprintf(stderr, warnstr, r->id, r->name); }
+    
+    // TRUE condition
+    if (out > 3) { return 1; }
+  }
+
+  return 0;
 }
 
 /*****************************************************************************
@@ -420,7 +435,29 @@ int map_isfull(struct room** arr) {
  *    Run srand() in main function before calling this method.
  *****************************************************************************/
 void map_$fill(struct room** arr) {
-  //
+  struct room *A, *B;
+  int x, y, z;
+
+  // Loop until we've met minimum number of connections
+  while (!map_isfull(arr)) {
+    // Get a random room with connections allowed
+    do {
+      A = room_$get(arr);
+    } while (!room_allowOutbound(A));
+
+    // Get another random room with connections allowed
+    // AND it's not the same room
+    // AND there's no existing connection
+    do {
+      B = room_$get(arr);
+
+      x = room_allowOutbound(B);
+      y = room_cmp(A, B);
+      z = room_isConnected(A, B);
+    } while (!x || y || z);
+
+    room_connect(A, B);   // Sets mutual connection between rooms
+  }
 }
 
 /*****************************************************************************
@@ -437,4 +474,24 @@ void map_$fill(struct room** arr) {
  *    Run srand() in main function before calling this method.
  *****************************************************************************/
 void map_$setTypes(struct room** arr) {
+  int i, j, k;
+  struct room* r;
+
+  // Get random index in 0 to ROOM_COUNT - 1 for start_room
+  i = rand() % ROOM_COUNT;
+
+  // Get random index for end_room
+  do {
+    j = rand() % ROOM_COUNT;
+  } while (i == j);
+
+  // Loop through all rooms and set their type property
+  for (k = 0; k < ROOM_COUNT; k++) {
+    r = arr[k];
+
+    if (k == i) { strcpy(r->type, "START_ROOM"); continue; }
+    if (k == j) { strcpy(r->type, "END_ROOM"); continue; }
+
+    strcpy(r->type, "MID_ROOM");
+  }
 }

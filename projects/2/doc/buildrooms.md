@@ -65,3 +65,30 @@ Loop until map is full, creating random room connections
 
 Assign start, end, mid type rooms
 `void map_$settypes()`
+
+## Map Filling Model from 2.2
+```
+// Adds a random, valid outbound connection from a Room to another Room
+void AddRandomConnection()  
+{
+  Room A;  // Maybe a struct, maybe global arrays of ints
+  Room B;
+
+  while(true)
+  {
+    A = GetRandomRoom();
+
+    if (CanAddConnectionFrom(A) == true)
+      break;
+  }
+
+  do
+  {
+    B = GetRandomRoom();
+  }
+  while(CanAddConnectionFrom(B) == false || IsSameRoom(A, B) == true || ConnectionAlreadyExists(A, B) == true);
+
+  ConnectRoom(A, B);  // TODO: Add this connection to the real variables, 
+  ConnectRoom(B, A);  //  because this A and B will be destroyed when this function terminates
+}
+```
