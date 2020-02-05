@@ -2,11 +2,10 @@
 
 Implement a text adventure game.
 
-## Specifications
+## Room Generator Program
 Source file: `colbertz.buildrooms.c`
 Binary: `colbertz.buildrooms`
 
-### Room Generator Program
 1. Create a directory _colbertz.rooms.PID_
 2. Generate 7 room files with hard-coded names
 3. Populate room data to files
@@ -42,3 +41,27 @@ CONNECTION 4: RoomE
 ...
 ROOM TYPE: START_ROOM
 ```
+
+## Adventure Program
+Source file: `colbertz.adventure.c`
+Binary: `colbertz.adventure`
+
+1. Read room data in from most recently created rooms directory
+2. Present a player interface with elements:
+  1. `CURRENT LOCATION: roomname`
+  2. `POSSIBLE CONNECTIONS: room1, room2, room3.`
+  3. Prompt `WHERE TO? >` (no space after `>`)
+3. Read input from user
+  + For _exact_ name of a connected room, write a newline, update location,
+    update path history, update step count, and prompt again.
+  + If name is not matched _exactly_ (case-sensitive), print an error line with
+    newlines on either side. Do not increment step count.
+4. On reaching the `END_ROOM`, stop the game. Print the following:
+  1. `YOU HAVE FOUND THE END ROOM. CONGRATULATIONS!`
+  2. `YOU TOOK n STEPS. YOUR PATH TO VICTORY WAS:`
+  3. List names of rooms on path, not including start room.
+5. Exit with status 0
+
+### Time Keeping
+_Coming soon..._ Get the rest of the program working first.
+
