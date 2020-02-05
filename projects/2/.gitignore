@@ -1,3 +1,4 @@
 # Ignore everything in scratch that doesn't end with .c
 scratch/*
 !scratch/*.c
+*buildrooms
