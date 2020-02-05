@@ -15,6 +15,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <unistd.h>
 
 
@@ -31,29 +32,34 @@
 // Max length of room names
 #define NAME_MAX_LENGTH 8
 
+// Max length of room type string
+#define TYPE_MAX_LENGTH 10
+
 // room struct holds all properties of a single room
 struct room {
   int id;
-  char* name;
-  char* type;
+  char name[NAME_MAX_LENGTH + 1];
+  char type[TYPE_MAX_LENGTH + 1];
   int pathcount;
-  struct room* paths[6]
+  struct room* paths[6];
 };
 
 // List of all possible room names
-char NAMESPACE[NAMESPACE_SIZE][NAME_MAX_LENGTH] = {
+char NAMESPACE[NAMESPACE_SIZE][NAME_MAX_LENGTH + 1] = {
   "study",
   "kitchen",
   "ballrm",
-  "conserv",
-  "bllrdrm",
+  "consvtry",
+  "billrdrm",
   "library",
   "hall",
   "lounge",
-  "dinerm",
+  "diningrm",
   "cellar"
 };
 
+// Keep track of which names are already in use
+int NAME_IN_USE[NAMESPACE_SIZE];
 
 /***********************
  * METHOD DECLARATIONS *
@@ -124,7 +130,27 @@ int main() {
  *    Array of strings NAMESPACE must be available globally.
  *****************************************************************************/
 struct room* room_create() {
-  //
+  struct room* r;
+  int n;
+
+  // Allocate heap space for new room
+  r = malloc(sizeof(struct room));
+
+  // Initialize everything but the name property
+  r->id = -1;
+  r->pathcount = 0;
+  memset(r->type, '\0', TYPE_MAX_LENGTH + 1);
+  memset(r->paths, 0, 6 * sizeof(struct room));
+
+  /* RANDOMLY SELECT A ROOM NAME FROM LIST */
+  do {
+    n = rand() % NAMESPACE_SIZE;    // random int from 0 to 9
+  } while (NAME_IN_USE[n] == 1);    // Get another if this one is in use
+
+  strcpy(r->name, NAMESPACE[n]);    // Set name property of struct
+  NAME_IN_USE[n] = 1;               // Mark this name as in-use
+
+  return r;
 }
 
 /*****************************************************************************
