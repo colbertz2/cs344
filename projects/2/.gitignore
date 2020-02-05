@@ -2,3 +2,4 @@
 scratch/*
 !scratch/*.c
 *buildrooms
+colbertz.rooms.*
