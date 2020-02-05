@@ -35,13 +35,17 @@
 // Max length of room type string
 #define TYPE_MAX_LENGTH 10
 
+// Max number of connections
+#define CONNECT_OUT_MAX 6
+#define CONNECT_IN_MAX 3
+
 // room struct holds all properties of a single room
 struct room {
   int id;
   char name[NAME_MAX_LENGTH + 1];
   char type[TYPE_MAX_LENGTH + 1];
   int pathcount;
-  struct room* paths[6];
+  struct room* paths[CONNECT_OUT_MAX];
 };
 
 // List of all possible room names
@@ -108,6 +112,11 @@ void map_$setTypes(struct room**);
 
 int main() {
   // Coming soon!
+
+  struct room* r = room_create();
+
+  room_free(r);
+
   return 0;
 }
 
@@ -140,7 +149,7 @@ struct room* room_create() {
   r->id = -1;
   r->pathcount = 0;
   memset(r->type, '\0', TYPE_MAX_LENGTH + 1);
-  memset(r->paths, 0, 6 * sizeof(struct room));
+  for (n = 0; n < CONNECT_OUT_MAX; n++) { r->paths[n] = NULL; }
 
   /* RANDOMLY SELECT A ROOM NAME FROM LIST */
   do {
@@ -166,7 +175,8 @@ struct room* room_create() {
  *    None
  *****************************************************************************/
 void room_free(struct room* r) {
-  //
+  // Simple solutions are best!
+  free(r);
 }
 
 /*****************************************************************************
