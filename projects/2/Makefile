@@ -8,3 +8,4 @@ buildrooms: src/buildrooms.c
 clean:
 	rm -f buildrooms
 	rm -rf *.dSYM
+	rm -rf colbertz.rooms.*
