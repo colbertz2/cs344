@@ -127,6 +127,9 @@ int main() {
     printf("Room %d with name %s\n", room_get(rooms, i)->id, room_get(rooms, i)->name);
   }
 
+  r = room_$get(rooms);
+  printf("Random Room %d with name %s\n", r->id, r->name);
+
   for (i = 0; i < ROOM_COUNT; i++) { room_free(rooms[i]); }
 
   return 0;
@@ -224,7 +227,8 @@ struct room* room_get(struct room** arr, int i) {
  *    Run srand() in main function before calling this method.
  *****************************************************************************/
 struct room* room_$get(struct room** arr) {
-  //
+  int i = rand() % ROOM_COUNT;    // Random int from 0 to 6
+  return arr[i];
 }
 
 /*****************************************************************************
