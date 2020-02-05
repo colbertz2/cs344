@@ -59,7 +59,7 @@ char NAMESPACE[NAMESPACE_SIZE][NAME_MAX_LENGTH] = {
  * METHOD DECLARATIONS *
  ***********************/
 
-// Allocate a room struct and assign it a name
+
 struct room* room_create();
 
 // Deallocate room struct
@@ -110,24 +110,89 @@ int main() {
  * METHOD DEFINITIONS *
  **********************/
 
-// Allocate a room struct and assign it a name
+/*****************************************************************************
+ * Allocate a room struct and assign it a name from global NAMESPACE.
+ * 
+ * PARAMS
+ *    None
+ * 
+ * RETURNS
+ *    struct room* - pointer to new room on the heap
+ * 
+ * PRECONDITIONS
+ *    Run srand() in the main function before calling this method.
+ *    Array of strings NAMESPACE must be available globally.
+ *****************************************************************************/
 struct room* room_create() {
+  //
 }
 
-// Deallocate room struct
-void room_free(struct room*) {
+/*****************************************************************************
+ * Deallocate room struct. Does not free any connected rooms, just this one.
+ * 
+ * PARAMS
+ *    struct room* r - pointer to room to free in memory
+ * 
+ * RETURNS
+ *    None
+ * 
+ * PRECONDITIONS
+ *    None
+ *****************************************************************************/
+void room_free(struct room* r) {
+  //
 }
 
-// Select a room from array by index
-struct room* room_get(struct room**, int) {
+/*****************************************************************************
+ * Select a room from array by index.
+ * 
+ * PARAMS
+ *    struct room** arr - pointer to array of room pointers
+ *    int i - index of array element
+ * 
+ * RETURNS
+ *    struct room* - pointer to room at index i
+ * 
+ * PRECONDITIONS
+ *    Size of arr is equal to ROOM_COUNT. Index boundary will only be enforced
+ *    to less than that number, not actual size of array.
+ *****************************************************************************/
+struct room* room_get(struct room** arr, int i) {
+  //
 }
 
-// Select a room at random from array
-struct room* room_$get(struct room**) {
+/*****************************************************************************
+ * Select a room at random from array.
+ * 
+ * PARAMS
+ *    struct room ** arr - pointer to array of room pointers
+ * 
+ * RETURNS
+ *    struct room* - pointer to room at random index
+ * 
+ * PRECONDITIONS
+ *    Size of arr is equal to ROOM_COUNT.
+ *    Run srand() in main function before calling this method.
+ *****************************************************************************/
+struct room* room_$get(struct room** arr) {
+  //
 }
 
-// Return 1 if outbound connections are allowed for a room, 0 otherwise
-int room_allowOutbound(struct room*) {
+/*****************************************************************************
+ * Return 1 if outbound connections are allowed for a room, 0 otherwise.
+ * i.e. if number of outbound connections is less than 6, then return true.
+ * 
+ * PARAMS
+ *    struct room* r - Room on which to check connections
+ * 
+ * RETURNS
+ *    int - 1 if outbound connections are allowed, 0 if not
+ * 
+ * PRECONDITIONS
+ *    None
+ *****************************************************************************/
+int room_allowOutbound(struct room* r) {
+  //
 }
 
 // Return 1 if rooms are already connected, 0 otherwise
