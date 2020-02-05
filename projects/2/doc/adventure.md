@@ -9,7 +9,6 @@
 
 ## Methods
 
-```
-struct room* room_import(char*)```
+`struct room* room_import(char*)` : 
 Import room data from file and allocate a new room struct to hold the data
 
