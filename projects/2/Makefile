@@ -2,7 +2,7 @@ CC=gcc -g
 
 all: buildrooms
 
-buildrooms: src/buildrooms.c
+buildrooms: src/colbertz.buildrooms.c
 	$(CC) -o $@ $^
 
 clean:
