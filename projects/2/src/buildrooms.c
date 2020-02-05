@@ -114,33 +114,41 @@ void map_$setTypes(struct room**);
 
 int main() {
   int i, fd;
-  char fname[20];
+  char fname[50];
+  char dname[25] = "colbertz.rooms.";
   struct room *rooms[ROOM_COUNT], *r;
 
-  printf("Starting PID %d\n\n", getpid());
-
-  srand(getpid());
+  srand(getpid());      // Seed random library with PID
 
   for (i = 0; i < ROOM_COUNT; i++) {
     r = room_create();
     r->id = i;
-    rooms[i] = r;
-
-    printf("Room %d with name %s\n", room_get(rooms, i)->id, room_get(rooms, i)->name);
+    rooms[i] = r;         // Add new room to array
   }
 
-  for (i = 0; i < ROOM_COUNT; i++) {
-    r = rooms[(i + 1) % ROOM_COUNT];
-    room_connect(rooms[i], r);
+  map_$fill(rooms);       // Fill out map connections
+  map_$setTypes(rooms);   // Set room types
 
-    strcpy(rooms[i]->type, "test");
+  // Make directory for room files
+  sprintf(dname, "colbertz.rooms.%d", getpid());
+  mkdir(dname, 0755);
+
+  // Create files and write room contents out
+  for (i = 0; i < ROOM_COUNT; i++) {
+    r = rooms[i];
     
-    sprintf(fname, "%s.room", rooms[i]->name);
-    fd = open(fname, O_CREAT | O_TRUNC | O_WRONLY, 0644);
-    room_export(rooms[i], fd);
+    // Create empty file
+    sprintf(fname, "%s/%s.rm", dname, r->name);
+    fd = open(fname, O_CREAT | O_WRONLY, 0644);
+
+    // Write struct data to file
+    room_export(r, fd);
+
+    // Close file and free struct
     close(fd);
   }
 
+  // Free rooms in memory
   for (i = 0; i < ROOM_COUNT; i++) { room_free(rooms[i]); }
 
   return 0;
@@ -404,7 +412,7 @@ int room_export(struct room* r, int fd) {
  *****************************************************************************/
 int map_isfull(struct room** arr) {
   struct room *r;
-  int i, out;
+  int i, out, count = 0;
   char* warnstr = "WARNING: Room %d named %s has >6 connections!\n";
 
   for (i = 0; i < ROOM_COUNT; i++) {
@@ -414,9 +422,11 @@ int map_isfull(struct room** arr) {
     // Warning for developer if too many connections
     if (out > 6) { fprintf(stderr, warnstr, r->id, r->name); }
     
-    // TRUE condition
-    if (out > 3) { return 1; }
+    // Count all the rooms with req'd number of connections
+    if (out > 3) { count++; }
   }
+
+  if (count == ROOM_COUNT) { return 1; }
 
   return 0;
 }
