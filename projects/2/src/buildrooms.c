@@ -17,6 +17,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+#include <assert.h>
 
 
 /***********************
@@ -111,11 +112,22 @@ void map_$setTypes(struct room**);
  ****************/
 
 int main() {
-  // Coming soon!
+  int i;
+  struct room *rooms[ROOM_COUNT], *r;
 
-  struct room* r = room_create();
+  printf("Starting PID %d\n\n", getpid());
 
-  room_free(r);
+  srand(getpid());
+
+  for (i = 0; i < ROOM_COUNT; i++) {
+    r = room_create();
+    r->id = i;
+    rooms[i] = r;
+
+    printf("Room %d with name %s\n", room_get(rooms, i)->id, room_get(rooms, i)->name);
+  }
+
+  for (i = 0; i < ROOM_COUNT; i++) { room_free(rooms[i]); }
 
   return 0;
 }
@@ -194,7 +206,8 @@ void room_free(struct room* r) {
  *    to less than that number, not actual size of array.
  *****************************************************************************/
 struct room* room_get(struct room** arr, int i) {
-  //
+  assert(i < ROOM_COUNT);
+  return arr[i];
 }
 
 /*****************************************************************************
