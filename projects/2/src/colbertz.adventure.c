@@ -114,6 +114,11 @@ int main() {
   // When the loop breaks, we've reached the end of the game
   game_end(steps, hist);
 
+  // Free all the room structs
+  for (i = 0; i < ROOM_COUNT; i++) {
+    free(rooms[i]);
+  }
+
   return 0;
 }
 
