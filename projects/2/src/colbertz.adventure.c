@@ -50,8 +50,11 @@ char* roomdir_open();
 // Imports all rooms from most recent room dir
 void roomdir_import(struct room**);
 
-// Prints location to console and prompts user for input
-char* ui_prompt(struct room*);
+// Prints information about the user's current location
+void ui_location(struct room*);
+
+// Prompts user for input and returns the result
+char* ui_prompt();
 
 // Return 1 if the game is over, 0 if not
 int game_checkEnd(struct room*);
@@ -79,10 +82,14 @@ int main() {
     }
   }
 
+  // Print user's starting location
+  ui_location(current);
+
   // Loop, prompting user for input until game end
   while (game_checkEnd(current) == 0) {
     // Print user prompt and get response
     response = ui_prompt(current);
+    printf("\n");       // Need extra space after entering room
 
     // @TODO: Match time command first!
 
@@ -100,7 +107,8 @@ int main() {
 
     // If no matching room was found, print an error and loop again
     if (next == NULL) {
-      printf("\nHUH? I DON’T UNDERSTAND THAT ROOM. TRY AGAIN.\n");
+      printf("HUH? I DON’T UNDERSTAND THAT ROOM. TRY AGAIN.\n\n");
+      ui_location(current);
       continue;
     }
 
@@ -109,6 +117,9 @@ int main() {
     steps++;              // increment step count
     current = next;       // move current location pointer
     next = NULL;          // clear the next pointer before looping
+
+    // Print user's new location, except for END_ROOM
+    if (game_checkEnd(current) == 0) { ui_location(current); }
   }
 
   // When the loop breaks, we've reached the end of the game
@@ -317,32 +328,46 @@ void roomdir_import(struct room** arr) {
 }
 
 /******************************************************************************
- * Prints location to console and prompts user for input
+ * Prints information about the player's current location to the console.
+ * 
+ * PARAMS
+ *    struct room* loc - Pointer to room struct, player's current location.
+ * 
+ * RETURNS
+ *    void
+ * 
+ * PRECONDITIONS
+ *    loc must not be NULL
+ ******************************************************************************/
+void ui_location(struct room* loc) {
+  assert(loc);
+
+  int i = 0;
+
+  printf("CURRENT LOCATION: %s\n", loc->name);
+  printf("POSSIBLE CONNECTIONS: %s", loc->paths[i]);
+  for (i = 1; i < loc->pathcount; i++) {
+    printf(", %s", loc->paths[i]);
+  }
+  printf(".\n");
+}
+
+/******************************************************************************
+ * Prompts user for input and returns the response in a new string.
  *
  * PARAMS
- *    struct room* loc - Current player location
+ *    None
  *
  * RETURNS
  *    char* - C string containing user response
  *
  * PRECONDITIONS
  *    resp must be mutable.
- *    loc must not be NULL
  ******************************************************************************/
-char* ui_prompt(struct room* loc) {
-  assert(loc);
-
+char* ui_prompt() {
   int i = 0;
   size_t buffer_size = 0;
   char* buffer = NULL;
-  
-  // Print player info
-  printf("\nCURRENT LOCATION: %s\n", loc->name);
-  printf("POSSIBLE CONNECTIONS: %s", loc->paths[i]);
-  for (i = 1; i < loc->pathcount; i++) {
-    printf(", %s", loc->paths[i]);
-  }
-  printf(".\n");
 
   // Prompt for player input
   printf("WHERE TO? >");
@@ -398,7 +423,7 @@ void game_end(int n, struct room** hist) {
   int i;
 
   // print congratulations
-  printf("\nYOU HAVE FOUND THE END ROOM. CONGRATULATIONS!\n");
+  printf("YOU HAVE FOUND THE END ROOM. CONGRATULATIONS!\n");
 
   // print step count
   printf("YOU TOOK %d STEPS. YOUR PATH TO VICTORY WAS:\n", n);
