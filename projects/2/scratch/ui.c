@@ -14,5 +14,7 @@ int main() {
     printf("%d\n", (int)buffer_size);
     printf("%d\n", (int)characters);
 
+    free(buffer);
+
     return 0;
 }
