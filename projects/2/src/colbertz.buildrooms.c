@@ -183,6 +183,7 @@ struct room* room_create() {
   // Initialize everything but the name property
   r->id = -1;
   r->pathcount = 0;
+  memset(r->name, '\0', NAME_MAX_LENGTH + 1);
   memset(r->type, '\0', TYPE_MAX_LENGTH + 1);
   for (n = 0; n < CONNECT_OUT_MAX; n++) { r->paths[n] = NULL; }
 
