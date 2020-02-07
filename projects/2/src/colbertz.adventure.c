@@ -26,6 +26,7 @@
 #define NAME_MAX_LENGTH 8
 #define TYPE_MAX_LENGTH 10
 #define CONNECT_OUT_MAX 6
+#define HIST_MAX 100
 
 // room struct holds all properties of a single room
 struct room {
@@ -33,7 +34,7 @@ struct room {
   char name[NAME_MAX_LENGTH + 1];
   char type[TYPE_MAX_LENGTH + 1];
   int pathcount;
-  char* paths[CONNECT_OUT_MAX];
+  char paths[CONNECT_OUT_MAX][NAME_MAX_LENGTH + 1];
 };
 
 /***********************
@@ -43,14 +44,14 @@ struct room {
 // Import room data from file and allocate a new room struct to hold it
 struct room* room_import(char*);
 
-// Find the most recently created room dir and open it
-DIR* roomdir_open();
+// Find the most recently created room dir and return it's name
+char* roomdir_open();
 
 // Imports all rooms from most recent room dir
 void roomdir_import(struct room**);
 
 // Prints location to console and prompts user for input
-void ui_prompt(char*, struct room*);
+char* ui_prompt(struct room*);
 
 // Return 1 if the game is over, 0 if not
 int game_checkEnd(struct room*);
@@ -64,6 +65,55 @@ void game_end(int, struct room**);
  ****************/
 
 int main() {
+  struct room *rooms[ROOM_COUNT], *hist[HIST_MAX], *current, *next = NULL;
+  char *response;
+  int i, steps = 0;
+
+  // Read room data in from most recent rooms directory
+  roomdir_import(rooms);
+
+  // Set current location to start room
+  for (i = 0; i < ROOM_COUNT; i++) {
+    if (strcmp(rooms[i]->type, "START_ROOM") == 0) {
+      current = rooms[i];
+    }
+  }
+
+  // Loop, prompting user for input until game end
+  while (game_checkEnd(current) == 0) {
+    // Print user prompt and get response
+    response = ui_prompt(current);
+
+    // @TODO: Match time command first!
+
+    // Try matching user response to one of the room names
+    // NOTE: strcmp is case-sensitive!
+    for (i = 0; i < ROOM_COUNT; i++) {
+      if (strcmp(rooms[i]->name, response) == 0) {
+        next = rooms[i];
+      }
+    }
+
+    // Deallocate the response, now we're done with it
+    free(response);
+    response = NULL;
+
+    // If no matching room was found, print an error and loop again
+    if (next == NULL) {
+      printf("\nHUH? I DON’T UNDERSTAND THAT ROOM. TRY AGAIN.\n");
+      continue;
+    }
+
+    // Otherwise, move to the selected room
+    hist[steps] = next;   // append the next room to history
+    steps++;              // increment step count
+    current = next;       // move current location pointer
+    next = NULL;          // clear the next pointer before looping
+  }
+
+  // When the loop breaks, we've reached the end of the game
+  game_end(steps, hist);
+
   return 0;
 }
 
@@ -110,7 +160,9 @@ struct room* room_import(char* fpath) {
   memset(r->name, '\0', (NAME_MAX_LENGTH + 1) * sizeof(char));
   memset(r->type, '\0', (TYPE_MAX_LENGTH + 1) * sizeof(char));
   r->pathcount = 0;
-  for (i = 0; i < CONNECT_OUT_MAX; i++) { r->paths[i] = NULL; }
+  for (i = 0; i < CONNECT_OUT_MAX; i++) { 
+    memset(r->paths[i], '\0', NAME_MAX_LENGTH + 1);
+  }
 
   // Room name
   fscanf(fptr, "ROOM NAME: %s", buffer);    // Read name from file
@@ -137,13 +189,13 @@ struct room* room_import(char* fpath) {
 
 /******************************************************************************
  * Find the most recently created room directory in the current working
- * directory and open it.
+ * directory and return it's name.
  *
  * PARAMS
  *    None
  *
  * RETURNS
- *    DIR* - Open directory stream.
+ *    char* - String containing directory name.
  *
  * PRECONDITIONS
  *    At least one directory with name like colbertz.rooms.PID must exist.
@@ -155,13 +207,13 @@ struct room* room_import(char* fpath) {
  *    vars and walked through each line to make sure I know what's
  *    going on.
  ******************************************************************************/
-DIR* roomdir_open() {
+char* roomdir_open() {
   DIR* cwd;
   struct dirent *fentry;
   char target[] = "colbertz.rooms.";
   struct stat atts;
   int latestTime = -1;
-  char latestName[256];
+  char latestName[256], *result;
   memset(latestName, '\0', sizeof(target));
 
   // Open current directory
@@ -199,17 +251,13 @@ DIR* roomdir_open() {
     exit(1);
   }
 
-  // Open the latest rooms directory
-  cwd = opendir(latestName);
-  
-  // Stop if directory can't be opened
-  if (cwd == NULL) {
-    fprintf(stderr, "Directory %s is unreadable. Exiting...", latestName);
-    exit(1);
-  }
+  // Allocate space on the heap for return value
+  result = malloc(strlen(latestName) + 1);
 
-  // Return open DIR
-  return cwd;
+  // Copy directory name to heap location
+  strcpy(result, latestName);
+
+  return result;
 }
 
 /******************************************************************************
@@ -229,36 +277,54 @@ DIR* roomdir_open() {
  *    To prevent overflow, this method will only import that many rooms.
  ******************************************************************************/
 void roomdir_import(struct room** arr) {
-  DIR* ds = roomdir_open();
+  char* dname = roomdir_open();
+  DIR* ds;
   struct dirent *f;
+  char path[100];
   int i = 0;
+
+  // Open room directory
+  ds = opendir(dname);
+
+  if (ds == NULL) {
+    fprintf(stderr, "Directory %s is unreadable. Exiting...\n", dname);
+    exit(1);
+  }
 
   // For each room file in the directory
   while ((f = readdir(ds)) != NULL) {
-    // Import room file to struct, add to array
-    arr[i] = room_import(f->d_name);
+    if (strstr(f->d_name, ".rm") != NULL) {
+      // Concat dir name and file name
+      memset(path, '\0', sizeof(path));
+      sprintf(path, "%s/%s", dname, f->d_name);
 
-    // Advance to next array index
-    i++;
+      // Import room file to struct, add to array
+      arr[i] = room_import(path);
+
+      // Advance to next array index
+      i++;
+    }
   }
+
+  // Clean up
+  closedir(ds);
+  free(dname);
 }
 
 /******************************************************************************
  * Prints location to console and prompts user for input
  *
  * PARAMS
- *    char *resp - C string to store user's response in
  *    struct room* loc - Current player location
  *
  * RETURNS
- *    None
- *    (Stores player response in given char* memory)
+ *    char* - C string containing user response
  *
  * PRECONDITIONS
  *    resp must be mutable.
  *    loc must not be NULL
  ******************************************************************************/
-void ui_prompt(char* resp, struct room* loc) {
+char* ui_prompt(struct room* loc) {
   assert(loc);
 
   int i = 0;
@@ -266,7 +332,7 @@ void ui_prompt(char* resp, struct room* loc) {
   char* buffer = NULL;
   
   // Print player info
-  printf("CURRENT LOCATION: %s\n", loc->name);
+  printf("\nCURRENT LOCATION: %s\n", loc->name);
   printf("POSSIBLE CONNECTIONS: %s", loc->paths[i]);
   for (i = 1; i < loc->pathcount; i++) {
     printf(", %s", loc->paths[i]);
@@ -278,7 +344,7 @@ void ui_prompt(char* resp, struct room* loc) {
   getline(&buffer, &buffer_size, stdin);
 
   // Point to getline's buffer
-  resp = buffer;
+  return buffer;
 }
 
 /******************************************************************************
