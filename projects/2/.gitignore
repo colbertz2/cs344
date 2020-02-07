@@ -2,4 +2,5 @@
 scratch/*
 !scratch/*.c
 *buildrooms
+*adventure
 colbertz.rooms.*
