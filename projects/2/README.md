@@ -63,5 +63,14 @@ Binary: `colbertz.adventure`
 5. Exit with status 0
 
 ### Time Keeping
-_Coming soon..._ Get the rest of the program working first.
+Goal: Return the current time of day using a second thread and mutexes.
 
+When the time command is entered, second thread should write the current time to file `currentTime.txt` in the current directory. Main thread reads time from file, and prints it for the user in this format: `1:03pm, Tuesday, September 13, 2016`
+
+Then, print out the prompt again (without location info). **Probably need to split `ui_prompt` into two different functions!
+
+_Recommended practice:_ 
++ Start main thread by locking a mutex, then spawn second thread. 
++ Second thread should attempt to lock this mutex, which blocks it until the mutex is unlocked by main thread. 
++ Keep second thread running in the background, in waiting. When time command comes in, unlock the mutex and use `_join()` method to wait on second thread to complete.
++ Re-lock the mutex, and re-create second thread.
