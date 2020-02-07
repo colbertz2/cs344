@@ -285,7 +285,7 @@ void roomdir_import(struct room** arr) {
   char* dname = roomdir_open();
   DIR* ds;
   struct dirent *f;
-  char path[100];
+  char path[276];
   int i = 0;
 
   // Open room directory
