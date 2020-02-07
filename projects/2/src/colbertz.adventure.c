@@ -341,7 +341,12 @@ char* ui_prompt(struct room* loc) {
 
   // Prompt for player input
   printf("WHERE TO? >");
-  getline(&buffer, &buffer_size, stdin);
+  i = getline(&buffer, &buffer_size, stdin);
+
+  // Remove newline from the response
+  if (buffer[i - 1] == '\n') {
+    buffer[i - 1] = '\0';
+  }
 
   // Point to getline's buffer
   return buffer;
@@ -388,7 +393,7 @@ void game_end(int n, struct room** hist) {
   int i;
 
   // print congratulations
-  printf("YOU HAVE FOUND THE END ROOM. CONGRATULATIONS!");
+  printf("\nYOU HAVE FOUND THE END ROOM. CONGRATULATIONS!\n");
 
   // print step count
   printf("YOU TOOK %d STEPS. YOUR PATH TO VICTORY WAS:\n", n);
