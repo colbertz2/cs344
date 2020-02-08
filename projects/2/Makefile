@@ -6,9 +6,9 @@ buildrooms: src/colbertz.buildrooms.c
 	$(CC) -o $@ $^
 
 adventure: src/colbertz.adventure.c
-	$(CC) -o $@ $^
+	$(CC) -o $@ $^ -lpthread
 
 clean:
-	rm -f buildrooms adventure
+	rm -f buildrooms adventure currentTime.txt
 	rm -rf *.dSYM
 	rm -rf colbertz.rooms.*
