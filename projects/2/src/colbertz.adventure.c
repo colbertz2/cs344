@@ -21,6 +21,8 @@
 #include <sys/stat.h>
 #include <stdlib.h>
 #include <assert.h>
+#include <time.h>
+#include <pthread.h>
 
 #define ROOM_COUNT 7
 #define NAME_MAX_LENGTH 8
@@ -62,15 +64,30 @@ int game_checkEnd(struct room*);
 // Print game-ending stuff
 void game_end(int, struct room**);
 
+// Timekeeper function, serves as start_routine for thread
+void* time_keeper(void*);
+
 
 /****************
  * MAIN ROUTINE *
  ****************/
 
+// Mutex is shared with timekeeper thread
+pthread_mutex_t mtx;
+
 int main() {
   struct room *rooms[ROOM_COUNT], *hist[HIST_MAX], *current, *next = NULL;
   char *response;
   int i, steps = 0;
+  pthread_t tt;
+  FILE* timefile;
+  char *timestr = NULL;
+  size_t timestr_size = 0;
+
+  // Lock mutex and initialize timekeeper thread
+  pthread_mutex_init(&mtx, NULL);
+  pthread_mutex_lock(&mtx);
+  pthread_create(&tt, NULL, &time_keeper, NULL);
 
   // Read room data in from most recent rooms directory
   roomdir_import(rooms);
@@ -91,7 +108,42 @@ int main() {
     response = ui_prompt(current);
     printf("\n");       // Need extra space after entering room
 
-    // @TODO: Match time command first!
+    // Try matching user response to "time"
+    if (strcmp(response, "time") == 0) {
+
+      // Unlock mutex and wait on timekeeper thread to finish executing
+      pthread_mutex_unlock(&mtx);
+      pthread_join(tt, NULL);
+
+      // When thread completes, read string from time file
+      timefile = fopen("currentTime.txt", "r");
+      if (timefile == NULL) { 
+        fprintf(stderr, "Unable to read time file.\n");
+        exit(1);
+      }
+
+      getline(&timestr, &timestr_size, timefile);
+      fclose(timefile);
+
+      // Print time string to console
+      printf("%s\n", timestr);
+
+      // Clean up
+      free(timestr);
+      timestr = NULL;
+      timestr_size = 0;
+
+      free(response);
+      response = NULL;
+
+      // Re-lock mutex and create a new thread
+      pthread_mutex_lock(&mtx);
+      pthread_create(&tt, NULL, &time_keeper, NULL);
+
+      // Next loop
+      continue;
+    }
+      
 
     // Try matching user response to one of the room names
     // NOTE: strcmp is case-sensitive!
@@ -129,6 +181,10 @@ int main() {
   for (i = 0; i < ROOM_COUNT; i++) {
     free(rooms[i]);
   }
+
+  // Clean up thread and mutex
+  pthread_mutex_destroy(&mtx);
+  pthread_cancel(tt);
 
   return 0;
 }
@@ -434,3 +490,57 @@ void game_end(int n, struct room** hist) {
   }
 }
 
+/******************************************************************************
+ * Timekeeper function, serves as start_routine for thread.
+ *
+ * PARAMS
+ *    None. Technically takes a void pointer to make compiler happy,
+ *    but doesn't do anything with it.
+ *
+ * RETURNS
+ *    Result is written to file currentTime.txt in current directory.
+ *    Technically returns a void pointer to make the compiler happy,
+ *    but don't expect to get anything.
+ *
+ * PRECONDITIONS
+ *    None
+ ******************************************************************************/
+void* time_keeper(void* v) {
+  int lock = -1;
+  size_t strmax = 80;
+  char fname[] = "currentTime.txt";
+  char timestr[(int)strmax];
+  FILE* fs;
+  time_t utctime;
+  struct tm *loctime;
+
+  // Wait for mutex to unlock
+  while (lock != 0) {
+    sleep(0.010);   // Wait at least 10ms between attempts
+    lock = pthread_mutex_lock(&mtx);    // Attempt to lock mutex, shared w/main
+  }
+
+  // Open time file, create if necessary, always truncate
+  fs = fopen(fname, "w+");
+  if (fs == NULL) {
+    fprintf(stderr, "Unable to write to time file %s\n", fname);
+    exit(1);
+  }
+
+  // Get current time (in local timezone)
+  time(&utctime);
+  loctime = localtime(&utctime);
+
+  // Format time string
+  memset(timestr, '\0', sizeof(timestr));
+  strftime(timestr, strmax, "%l:%M%P, %A, %B %d, %Y", loctime);
+
+  // Print line to file
+  fprintf(fs, "%s\n", timestr);
+
+  // Clean up
+  fclose(fs);
+  pthread_mutex_unlock(&mtx);
+
+  pthread_exit(0);
+}
