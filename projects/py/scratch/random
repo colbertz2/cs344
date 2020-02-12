@@ -1,0 +1,14 @@
+#! /usr/bin/python3
+
+import random
+
+random.seed()
+
+alpha = [None] * 26
+for i in range(0, 26):
+    u = i + 97
+    alpha[i] = chr(u)
+
+result = random.choices(alpha, k=10)
+
+print("".join(result))

@@ -1,0 +1,9 @@
+#! /usr/bin/python3
+
+import sys
+
+# Write text to stdout
+sys.stdout.write('This text ends with a newline\n')
+sys.stdout.write('This text does not!')
+sys.stdout.write(' Same line.')
+sys.stdout.write('\n')
