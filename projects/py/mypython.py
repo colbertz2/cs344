@@ -89,7 +89,7 @@ def main():
     # For each output file...
     for p in outpaths:
         # Open file stream for writing 
-        f = open(outpaths[i], 'w+')
+        f = open(p, 'w')
 
         # try block acts like a trap for SIGINT
         try:
