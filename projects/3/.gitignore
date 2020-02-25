@@ -1,0 +1,6 @@
+smallsh
+
+# ignore everything in etc that doesn't end with .c
+etc/*
+!etc/*.c
+
