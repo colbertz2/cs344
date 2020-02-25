@@ -20,12 +20,14 @@ init status to 0
 
 while true:
   Send prompt to user and read input to command buffer
-  If command is blank, break
-  If command starts with #, break
-  Tokenize command to token buffer
+  If command is blank, continue
+  If command starts with #, continue
+  Tokenize command buffer to token buffer
   switch (first token):
-    exit: Clean up and exit shell
-    cd; Change working directory to (second token)
+    exit: break
+    cd: Tokenize command buffer again, chdir to (second token)
     status: Print status of last foreground proc
+
+clean up and exit shell
 ```
 
