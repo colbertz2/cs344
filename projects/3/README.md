@@ -1,4 +1,12 @@
 # Project 3 - smallsh
+1. [Propmt](#prompt)
+2. [Command Execution](#command-execution)
+3. [Background and Foreground](#background-and-foreground)
+4. [Signals](#signals)
+5. [Builtin Commands](#builtin-commands)
+6. [Tips and Notes](#tips-from-assignment)
+7. [Submission](#submission)
+
 [Canvas Assignment](https://oregonstate.instructure.com/courses/1780106/assignments/7770260)
 
 ## Prompt
