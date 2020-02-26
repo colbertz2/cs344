@@ -23,6 +23,9 @@
 #define CMD_MAX 2048
 #define BG_MAX 512
 
+// status_t indicates if the status is a return value or signal
+enum status_t {RETURN = 0, SIGNAL = 1};
+
 
 /**************************************************************************
  * MAIN ROUTINE
@@ -32,10 +35,12 @@
  **************************************************************************/
 int main() {
   int status, cmdBufSize, cmdReadSize, intret;
+  enum status_t type;
   char *cmdBuffer, *tokBuffer, *prompt = ": ";
 
   /* INITIALIZE VARIABLES */
   status = 0;   // Default status before exec'ing any child proc
+  type = RETURN; // Indicates whether status is a return val or signal
   cmdBufSize = CMD_MAX + 1;   // Buffer size is 2048 chars + null term
   cmdReadSize = 0;            // Getline tells us how many chars it reads
 
@@ -88,6 +93,18 @@ int main() {
       break;    // Stop shell, clean up and exit
     
     } else if (strcmp(tokBuffer, "status") == 0) {
+      // Print different strings for signals vs returns
+      switch (type) {
+        case 0:
+          printf("exit value ");
+          break;
+        case 1:
+          printf("terminated by signal ");
+          break;
+        default:
+          printf("status ");
+      }
+      
       printf("%d\n", status);   // Print last return value
       fflush(stdout);
 
@@ -114,6 +131,7 @@ int main() {
     fprintf(stderr, "smallsh: command not found: %s\n", tokBuffer);
     fflush(stderr);
     status = 1;
+    type = RETURN;
 
   }
 
