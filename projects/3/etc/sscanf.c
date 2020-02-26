@@ -2,10 +2,10 @@
 
 int main() {
     
-  char* myStr = "This is a string with multiple words!";
+  char* myStr = "cd";
   char scanStr[10];
 
-  sscanf(myStr, "%s %*s", scanStr);
+  sscanf(myStr, "%*s %s %*s", scanStr);
 
   printf("%s\n", scanStr);
 
