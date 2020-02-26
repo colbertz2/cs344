@@ -13,19 +13,10 @@
  *    For CS344, W2020 (online)
  ******************************************************************************/
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <errno.h>
-#include <unistd.h>
-#include <sys/types.h>
+#include "builtins.h"
 
 #define CMD_MAX 2048
 #define BG_MAX 512
-
-// status_t indicates if the status is a return value or signal
-enum status_t {RETURN = 0, SIGNAL = 1};
-
 
 /**************************************************************************
  * MAIN ROUTINE
@@ -93,48 +84,12 @@ int main() {
       break;    // Stop shell, clean up and exit
     
     } else if (strcmp(tokBuffer, "status") == 0) {
-      // Print different strings for signals vs returns
-      switch (type) {
-        case 0:
-          printf("exit value ");
-          break;
-        case 1:
-          printf("terminated by signal ");
-          break;
-        default:
-          printf("status ");
-      }
-      
-      printf("%d\n", status);   // Print last return value
-      fflush(stdout);
-
+      // Print the last return value or signal
+      _status(type, status);
       continue;
     
     } else if (strcmp(tokBuffer, "cd") == 0) {
-      // Edge case: If command is exactly 'cd', chdir to HOME
-      memset(tokBuffer, '\0', strlen(tokBuffer));
-      sscanf(cmdBuffer, "%*s %s", tokBuffer);   // Tokenize all after cd
-      if (strcmp(tokBuffer, "") == 0) {
-        intret = chdir(getenv("HOME"));
-      } else {
-        // chdir supports relative and absolute path names by default
-        // so we don't have to do anything special
-        memset(tokBuffer, '\0', strlen(tokBuffer));
-        sscanf(cmdBuffer, "%*s %s %*s", tokBuffer); // tokenize second word
-        intret = chdir(tokBuffer);
-      }
-
-      // Report chdir errors
-      if (intret != 0) {
-        fprintf(stderr, "cd: %s: %s\n", strerror(errno), tokBuffer);
-        fflush(stderr);
-      }
-
-      // DEV: print cwd
-      // memset(tokBuffer, '\0', strlen(tokBuffer));
-      // getcwd(tokBuffer, (size_t) cmdBufSize);
-      // printf("%s\n", tokBuffer);
-
+      intret = _changedir(cmdBuffer, tokBuffer);
       continue;
     }
 
