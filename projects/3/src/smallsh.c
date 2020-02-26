@@ -111,17 +111,29 @@ int main() {
       continue;
     
     } else if (strcmp(tokBuffer, "cd") == 0) {
-      // chdir supports relative and absolute path names by default
-      // so we don't have to do anything special
-
-      sscanf(cmdBuffer, "%*s %s %*s", tokBuffer); // tokenize second word
-      intret = chdir(tokBuffer);
+      // Edge case: If command is exactly 'cd', chdir to HOME
+      memset(tokBuffer, '\0', strlen(tokBuffer));
+      sscanf(cmdBuffer, "%*s %s", tokBuffer);   // Tokenize all after cd
+      if (strcmp(tokBuffer, "") == 0) {
+        intret = chdir(getenv("HOME"));
+      } else {
+        // chdir supports relative and absolute path names by default
+        // so we don't have to do anything special
+        memset(tokBuffer, '\0', strlen(tokBuffer));
+        sscanf(cmdBuffer, "%*s %s %*s", tokBuffer); // tokenize second word
+        intret = chdir(tokBuffer);
+      }
 
       // Report chdir errors
       if (intret != 0) {
         fprintf(stderr, "cd: %s: %s\n", strerror(errno), tokBuffer);
         fflush(stderr);
       }
+
+      // DEV: print cwd
+      // memset(tokBuffer, '\0', strlen(tokBuffer));
+      // getcwd(tokBuffer, (size_t) cmdBufSize);
+      // printf("%s\n", tokBuffer);
 
       continue;
     }
