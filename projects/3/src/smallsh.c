@@ -48,7 +48,12 @@ int main() {
   /* MAIN SHELL LOOP */
   // Loop until exit command is received
   while (1) {
-    
+
+    /** INIT BUFFERS **/
+    // Clear the contents of each buffer before each prompt
+    memset(cmdBuffer, '\0', strlen(cmdBuffer));
+    memset(tokBuffer, '\0', strlen(tokBuffer));
+
     /** PROMPT **/
     printf(prompt);
     fflush(stdout);     // Print and flush user prompt
@@ -58,6 +63,7 @@ int main() {
     // Enforce 2048-char command limit
     if (cmdReadSize > CMD_MAX) {
       fprintf(stderr, "smallsh: Command is too long\n");
+      fflush(stderr);
 
       // Reallocate and initialize command buffer to original size
       cmdBufSize = CMD_MAX + 1;
@@ -67,14 +73,14 @@ int main() {
       continue;
     }
 
+    // Tokenize first word
+    sscanf(cmdBuffer, "%s %*s", tokBuffer);
+
     /** BLANKS / COMMENTS **/
     // If line is blank or comment, do nothing and continue
-    if (strcmp(cmdBuffer, "") == 0 || cmdBuffer[0] == '#') {
+    if (strcmp(tokBuffer, "") == 0 || tokBuffer[0] == '#') {
       continue;
     }
-
-    // Tokenize first word of string
-    sscanf(cmdBuffer, "%s %*s", tokBuffer);
 
     /** BULTIN COMMANDS **/
     // Process command right away if it's one of the builtins
@@ -83,6 +89,8 @@ int main() {
     
     } else if (strcmp(tokBuffer, "status") == 0) {
       printf("%d\n", status);   // Print last return value
+      fflush(stdout);
+
       continue;
     
     } else if (strcmp(tokBuffer, "cd") == 0) {
@@ -95,6 +103,7 @@ int main() {
       // Report chdir errors
       if (intret != 0) {
         fprintf(stderr, "cd: %s: %s\n", strerror(errno), tokBuffer);
+        fflush(stderr);
       }
 
       continue;
@@ -103,6 +112,7 @@ int main() {
     /** COMMAND NOT FOUND **/
     // If nothing has continued the loop up to this point, command failed
     fprintf(stderr, "smallsh: command not found: %s\n", tokBuffer);
+    fflush(stderr);
     status = 1;
 
   }
