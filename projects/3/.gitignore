@@ -4,3 +4,4 @@ smallsh
 etc/*
 !etc/*.c
 
+compile.log

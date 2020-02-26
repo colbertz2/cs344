@@ -1,11 +1,12 @@
 CC=gcc -g -Wall
+CLOG=compile.log
 
 all: smallsh
 
 smallsh: src/smallsh.c
-	$(CC) -o $@ $^
+	script -q -c "$(CC) -o $@ $^" $(CLOG)
 
 clean:
-	rm -f smallsh
+	rm -f smallsh $(CLOG)
 	rm -f *.dSYM
 
