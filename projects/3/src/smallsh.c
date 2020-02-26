@@ -14,8 +14,9 @@
  ******************************************************************************/
 
 #include "builtins.h"
+#include "exec.h"
+#include <sys/wait.h>
 
-#define CMD_MAX 2048
 #define BG_MAX 512
 
 /**************************************************************************
@@ -26,14 +27,18 @@
  **************************************************************************/
 int main() {
   int status, cmdBufSize, cmdReadSize, intret;
+  int bg, ffg;
   enum status_t type;
   char *cmdBuffer, *tokBuffer, *prompt = ": ";
+  pid_t spawnpid = -5;
 
   /* INITIALIZE VARIABLES */
   status = 0;   // Default status before exec'ing any child proc
   type = RETURN; // Indicates whether status is a return val or signal
   cmdBufSize = CMD_MAX + 1;   // Buffer size is 2048 chars + null term
   cmdReadSize = 0;            // Getline tells us how many chars it reads
+  bg = 0;       // By default, run processes in the foreground
+  ffg = 0;      // When ffg == 1, force foregrounding
 
   // Use CMD_MAX + 1 so that the actual capacity of each string can be CMD_MAX
   cmdBuffer = calloc(cmdBufSize, sizeof(char));
@@ -92,6 +97,40 @@ int main() {
       intret = _changedir(cmdBuffer, tokBuffer);
       continue;
     }
+
+    /** COMMAND EXECUTION **/
+    bg = 0;   // By default, run processes in the foreground
+    spawnpid = fork();
+    switch (spawnpid) {
+      case -1:
+        // Something went wrong, no child was created
+        fprintf(stderr, "fork: %s\n", strerror(errno));
+        fflush(stderr);
+        status = -1;
+        break;
+      
+      case 0:
+        /* This is the child process! */
+        //_set_redirects();
+        _execute_cmd(cmdBuffer);
+        break;
+
+      default:
+        /* This is the parent process! */
+        //bg = _check_background()
+        // Wait on foreground process to terminate
+        waitpid(spawnpid, &intret, 0);
+        
+        // Interpret results of process termination
+        if (WIFSIGNALED(intret)) {
+          type = SIGNAL;
+          status = WTERMSIG(intret);
+        } else {
+          type = RETURN;
+          status = WEXITSTATUS(intret);
+        }
+    }
+    continue;   // After processing command, return to prompt
 
     /** COMMAND NOT FOUND **/
     // If nothing has continued the loop up to this point, command failed
