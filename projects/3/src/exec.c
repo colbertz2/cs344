@@ -3,7 +3,7 @@
 // Parses command string and runs exec()
 void _execute_cmd(char* cmd) {
     int i, n_tok, tok_size = 10;
-    char *buffer, **tokens;
+    char *buffer, **tokens, *target;
 
     // avoid strtok destruction of command line by making a copy
     buffer = calloc(CMD_MAX + 1, sizeof(char));
@@ -35,7 +35,7 @@ void _execute_cmd(char* cmd) {
         if (i >= tok_size && tok_size <= NARG_MAX) {
             // Don't allocate space for more than 512 args
             tok_size = (tok_size * 2) % NARG_MAX;
-            tokens = (char **)reallocarray(tokens, (size_t) tok_size, sizeof(char*));
+            tokens = (char **)realloc(tokens, (size_t)tok_size * sizeof(char*));
             for (i = n_tok; i < tok_size; i++) { tokens[i] = NULL; }
             i = n_tok;
         }
@@ -53,6 +53,10 @@ void _execute_cmd(char* cmd) {
         // Read next token from string
         tokens[i] = strtok(NULL, " ");
     }
+
+    // Trim trailing newline from last token
+    target = strstr(tokens[i - 1], "\n");
+    if (target != NULL) { memset(target, '\0', sizeof(char)); }
 
     // Execute tokenized command
     execvp(tokens[0], tokens);

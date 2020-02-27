@@ -130,15 +130,6 @@ int main() {
           status = WEXITSTATUS(intret);
         }
     }
-    continue;   // After processing command, return to prompt
-
-    /** COMMAND NOT FOUND **/
-    // If nothing has continued the loop up to this point, command failed
-    fprintf(stderr, "smallsh: command not found: %s\n", tokBuffer);
-    fflush(stderr);
-    status = 1;
-    type = RETURN;
-
   }
 
   /* CLEAN UP AND EXIT */
