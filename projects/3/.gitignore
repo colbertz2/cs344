@@ -5,3 +5,4 @@ etc/*
 !etc/*.c
 
 compile.log
+*.o
