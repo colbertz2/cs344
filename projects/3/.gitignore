@@ -6,3 +6,4 @@ etc/*
 
 compile.log
 *.o
+log

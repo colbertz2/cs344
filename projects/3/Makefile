@@ -1,19 +1,23 @@
 CC=gcc -g -Wall
-CLOG=compile.log
+CLOG=log
 
-all: smallsh
+COMP=script -q -c "$(CC) -c -o $@ $<" $(CLOG)/$(@F)
+LINK=script -q -c "$(CC) -o $@ $^" $(CLOG)/$(@F)
+
+all: log smallsh
 
 smallsh: src/smallsh.c src/builtins.o src/exec.o
-	script -q -c "$(CC) -o $@ $^" $(CLOG)
+	$(LINK)
 
 src/builtins.o: src/builtins.c src/builtins.h
-	$(CC) -c -o $@ src/builtins.c
+	$(COMP)
 
 src/exec.o: src/exec.c src/exec.h
-	$(CC) -c -o $@ src/exec.c
+	$(COMP)
+
+log:
+	mkdir log
 
 clean:
-	rm -f smallsh $(CLOG)
-	rm -f src/*.o
-	rm -f *.dSYM
-
+	rm -f smallsh src/*.o log/*
+	rm -rf *.dSYM
