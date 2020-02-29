@@ -21,11 +21,12 @@ void _execute_cmd(char* cmd) {
     // Loop until there are no more tokens
     while (tokens[i] != NULL) {
         // Ignore shell characters by overwriting them
-        if (   strcmp(tokens[i], "<") == 0
-            || strcmp(tokens[i], ">") == 0
-            || strcmp(tokens[i], "&") == 0
+        if (   strstr(tokens[i], "<") != NULL
+            || strstr(tokens[i], ">") != NULL
+            || strstr(tokens[i], "&") != NULL
         ) {
-            tokens[i] = NULL;
+            tokens[i] = NULL;       // Overwrite this token
+            strtok(NULL, " ");      // Skip the next one
         } else {
             i++;
             n_tok = i;
@@ -57,6 +58,11 @@ void _execute_cmd(char* cmd) {
     // Trim trailing newline from last token
     target = strstr(tokens[i - 1], "\n");
     if (target != NULL) { memset(target, '\0', sizeof(char)); }
+
+    /* DEV print each token */
+    // for (i = 0; i < n_tok; i++) {
+    //     printf("%s\n", tokens[i]);
+    // }
 
     // Execute tokenized command
     execvp(tokens[0], tokens);
