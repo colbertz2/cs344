@@ -17,7 +17,7 @@
 #include "exec.h"
 #include <sys/wait.h>
 
-#define BG_MAX 512
+#define bg_flag_MAX 512
 
 /**************************************************************************
  * MAIN ROUTINE
@@ -27,7 +27,7 @@
  **************************************************************************/
 int main() {
   int status, cmdBufSize, cmdReadSize, intret;
-  int bg, ffg;
+  int bg_flag, force_fg_flag;
   enum status_t type;
   char *cmdBuffer, *tokBuffer, *prompt = ": ";
   pid_t spawnpid = -5;
@@ -37,8 +37,8 @@ int main() {
   type = RETURN; // Indicates whether status is a return val or signal
   cmdBufSize = CMD_MAX + 1;   // Buffer size is 2048 chars + null term
   cmdReadSize = 0;            // Getline tells us how many chars it reads
-  bg = 0;       // By default, run processes in the foreground
-  ffg = 0;      // When ffg == 1, force foregrounding
+  bg_flag = 0;       // By default, run processes in the foreground
+  force_fg_flag = 0;      // When force_fg_flag == 1, force foregrounding
 
   // Use CMD_MAX + 1 so that the actual capacity of each string can be CMD_MAX
   cmdBuffer = calloc(cmdBufSize, sizeof(char));
@@ -94,12 +94,12 @@ int main() {
       continue;
     
     } else if (strcmp(tokBuffer, "cd") == 0) {
-      intret = _changedir(cmdBuffer, tokBuffer);
+      _changedir(cmdBuffer, tokBuffer);
       continue;
     }
 
     /** COMMAND EXECUTION **/
-    bg = 0;   // By default, run processes in the foreground
+    bg_flag = 0;   // By default, run processes in the foreground
     spawnpid = fork();
     switch (spawnpid) {
       case -1:
@@ -111,13 +111,17 @@ int main() {
       
       case 0:
         /* This is the child process! */
-        //_set_redirects();
-        _execute_cmd(cmdBuffer);
+        
+        // Redirect file descriptors as directed
+        intret = _set_redirects(cmdBuffer);
+        if (intret != 0) { status = 1; continue; }
+
+        _execute_cmd(cmdBuffer);    // Parse the string, do the thing! :D
         break;
 
       default:
         /* This is the parent process! */
-        //bg = _check_background()
+        //bg_flag = _check_background()
         // Wait on foreground process to terminate
         waitpid(spawnpid, &intret, 0);
         
