@@ -1,0 +1,12 @@
+CS 344 - Project 3
+
+Name: Zach Colbert
+Email: colbertz@oregonstate.edu
+
+Makefile provided for compilation. Just run `make` in the top directory.
+Then, run executable `smallsh`
+
+Signals are not handled according to spec. I didn't have time to complete this.
+Backgrounding is partially implemented, but is broken. Child processes are
+inconsistently cleaned up.
+
