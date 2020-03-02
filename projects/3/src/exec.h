@@ -16,3 +16,6 @@ int _set_redirects(char* cmd);
 
 // Parses command string and runs exec()
 void _execute_cmd(char* cmd);
+
+// Checks for the background operator at the end of the command line
+int _check_background(char* cmd);

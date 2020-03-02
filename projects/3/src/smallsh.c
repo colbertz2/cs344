@@ -17,7 +17,7 @@
 #include "exec.h"
 #include <sys/wait.h>
 
-#define bg_flag_MAX 512
+#define BG_MAX 512    // Max number of background processes
 
 /**************************************************************************
  * MAIN ROUTINE
@@ -26,11 +26,14 @@
  * processes. Builtin commands: exit  cd  status
  **************************************************************************/
 int main() {
+  int i, j;
   int status, cmdBufSize, cmdReadSize, intret;
-  int bg_flag, force_fg_flag;
+  int bg_flag, force_fg_flag, devout;
   enum status_t type;
   char *cmdBuffer, *tokBuffer, *prompt = ": ";
   pid_t spawnpid = -5;
+  pid_t* waitq;
+  int waitq_n = 0;
 
   /* INITIALIZE VARIABLES */
   status = 0;   // Default status before exec'ing any child proc
@@ -39,6 +42,9 @@ int main() {
   cmdReadSize = 0;            // Getline tells us how many chars it reads
   bg_flag = 0;       // By default, run processes in the foreground
   force_fg_flag = 0;      // When force_fg_flag == 1, force foregrounding
+  
+  waitq = calloc(BG_MAX, sizeof(pid_t));    // Tracks active bg processes
+  for (i = 0; i < BG_MAX; i++) { waitq[i] = -5; }
 
   // Use CMD_MAX + 1 so that the actual capacity of each string can be CMD_MAX
   cmdBuffer = calloc(cmdBufSize, sizeof(char));
@@ -49,6 +55,43 @@ int main() {
   /* MAIN SHELL LOOP */
   // Loop until exit command is received
   while (1) {
+
+    //** CHECK BACKGROUND PROCESSES **/
+    i = 0;
+    j = waitq_n;
+    while (waitq[i] != -5 && i < j) {
+      // If the process terminated
+      spawnpid = waitpid(waitq[i], &intret, WNOHANG);
+      // if (spawnpid == waitq[i]) {
+      if (spawnpid != 0 && spawnpid != -1) {
+        printf("[%d] PID %d ", i+1, waitq[i]);
+
+        if (WIFSIGNALED(intret)) {
+          printf("terminated by signal %d\n", WTERMSIG(intret));
+        } else {
+          printf("exit value %d\n", WEXITSTATUS(intret));
+        }
+
+        fflush(stdout);
+
+        // Remove PID from the queue
+        waitq[i] = -5;
+        waitq_n--;
+      }
+
+      i++;
+    }
+
+    // Shuffle remaining waitq pids down to the front of the array
+    for (i = 0; i < waitq_n; i++) {
+      // Search forward for the next real PID
+      j = 1;
+      while (waitq[j] == -5 && j < BG_MAX) { j++; }
+
+      // Move that value into the current array element
+      waitq[i] = waitq[j];
+      waitq[j] = -5;
+    }
 
     /** INIT BUFFERS **/
     // Clear the contents of each buffer before each prompt
@@ -99,7 +142,7 @@ int main() {
     }
 
     /** COMMAND EXECUTION **/
-    bg_flag = 0;   // By default, run processes in the foreground
+    bg_flag = _check_background(cmdBuffer); // Check if bg process was requested
     spawnpid = fork();
     switch (spawnpid) {
       case -1:
@@ -112,26 +155,45 @@ int main() {
       case 0:
         /* This is the child process! */
         
-        // Redirect file descriptors as directed
-        intret = _set_redirects(cmdBuffer);
-        if (intret != 0) { status = 1; continue; }
+        if (bg_flag == 0) {
+          // Redirect file descriptors as directed
+          intret = _set_redirects(cmdBuffer);
+          if (intret != 0) { status = 1; continue; }
+
+        } else {
+          // Redirect input and output to /dev/null for bg processes
+          devout = open("/dev/null", O_RDWR);
+          dup2(devout, 0);
+          dup2(devout, 1);
+        }
 
         _execute_cmd(cmdBuffer);    // Parse the string, do the thing! :D
         break;
 
       default:
         /* This is the parent process! */
-        //bg_flag = _check_background()
-        // Wait on foreground process to terminate
-        waitpid(spawnpid, &intret, 0);
-        
-        // Interpret results of process termination
-        if (WIFSIGNALED(intret)) {
-          type = SIGNAL;
-          status = WTERMSIG(intret);
+
+        // Background the process if requested, and not in fg-only mode
+        if (force_fg_flag == 0 && bg_flag == 1) {
+          // Add new PID to list of background processes
+          waitq[waitq_n] = spawnpid;
+          waitq_n++;
+
+          // Report PID to console
+          printf("[%d] PID %d\n", waitq_n, spawnpid);
+
         } else {
-          type = RETURN;
-          status = WEXITSTATUS(intret);
+          // Wait on foreground process to terminate
+          waitpid(spawnpid, &intret, 0);
+
+          // Interpret results of process termination
+          if (WIFSIGNALED(intret)) {
+            type = SIGNAL;
+            status = WTERMSIG(intret);
+          } else {
+            type = RETURN;
+            status = WEXITSTATUS(intret);
+          }
         }
     }
   }
@@ -139,6 +201,7 @@ int main() {
   /* CLEAN UP AND EXIT */
   free(cmdBuffer);
   free(tokBuffer);
+  free(waitq);
 
   return 0;
 }

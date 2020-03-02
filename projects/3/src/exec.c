@@ -172,3 +172,33 @@ void _execute_cmd(char* cmd) {
 
     exit(1);
 }
+
+/* Checks for the background operator at the end of the command line
+    Returns 1 if the command should be backgrounded
+*/
+int _check_background(char* cmd) {
+  int i, bg_flag = 0;
+  char* buffer;
+
+  // Avoid strtok destruction of command line by making a copy
+  buffer = calloc(CMD_MAX + 1, sizeof(char));
+  memset(buffer, '\0', CMD_MAX + 1);
+  strcpy(buffer, cmd);
+
+  // Command line looks like:
+  // command [args] [redirection] &\n
+  //                              ^
+  //                         strlen(buffer) -2
+  i = strlen(buffer) - 2;
+  if (buffer[i] == '&') { bg_flag = 1; }
+  
+  // DEV
+  // if (buffer[i] == '&') {
+  //   fprintf(stderr, "Background me!\n");
+  //   fflush(stderr);
+  // }
+
+  // Clean up
+  free(buffer);
+  return bg_flag;
+}

@@ -45,9 +45,9 @@ int _changedir(char* cmd, char* buffer) {
   }
 
   /* DEV: print cwd */
-  memset(buffer, '\0', strlen(buffer));
-  getcwd(buffer, (size_t) 100);
-  printf("%s\n", buffer);
+  // memset(buffer, '\0', strlen(buffer));
+  // getcwd(buffer, (size_t) 100);
+  // printf("%s\n", buffer);
 
   return intret;
 }
