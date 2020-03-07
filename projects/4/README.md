@@ -17,3 +17,8 @@ Client takes ciphertext and key from files, and connect to `otp_dec_d` via socke
 
 ### [`keygen`](doc/keygen.md)
 Creates a key file of the specified length.
+
+## Links
+[Course Home](https://oregonstate.instructure.com/courses/1780106)
+[Block 4](https://oregonstate.instructure.com/courses/1780106/pages/block-4)
+[Assignment Description](https://oregonstate.instructure.com/courses/1780106/assignments/7770261)
