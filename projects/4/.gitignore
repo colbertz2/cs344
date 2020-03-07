@@ -1,0 +1,10 @@
+ex-client
+ex-server
+
+# ignore everything in etc that doesn't end with .c
+etc/*
+!etc/*.c
+
+compile.log
+*.o
+log
