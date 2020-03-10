@@ -4,7 +4,10 @@ CLOG=log
 COMP=script -q -c "$(CC) -c -o $@ $<" $(CLOG)/$(@F)
 LINK=script -q -c "$(CC) -o $@ $^" $(CLOG)/$(@F)
 
-all: log example
+all: log example src/otp.o
+
+src/otp.o: src/otp.c src/otp.h
+	$(COMP)
 
 example: ex-client ex-server
 
