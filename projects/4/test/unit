@@ -1,1 +1,36 @@
 #!/bin/bash
+
+#################################################
+# Unit tests for OTP applications
+#
+# AUTHOR
+#   Zach Colbert (colbertz@oregonstate.edu)
+#################################################
+
+proj=$(realpath $(dirname $0)/..)
+test="$proj/test"
+src="$proj/src"
+
+retval=0
+
+#################################################
+# OTP LIBRARY
+#################################################
+
+# Require src/otp.o
+if [[ ! -f "$src/otp.o" ]]; then
+    echo "Unit test: Missing src/otp.o" >&2
+    exit 1
+fi
+
+# Compile unit test for OTP library
+gcc -Wall -g -o $test/unit_otp $test/unit_otp.c $src/otp.o
+
+# run OTP library unit test
+$test/unit_otp
+
+
+#################################################
+# CLEAN UP
+#################################################
+rm -f $test/unit_otp

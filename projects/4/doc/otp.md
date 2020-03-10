@@ -11,9 +11,8 @@ Error if char is not in OTP_CHARSPACE.
 Convert int to char literal in OTP space.
 Error if int is greater or equal to OTP_CHARSPACE_SIZE.
 
-### `int otp_strip_newline(char*)`
+### `void otp_strip_newline(char*)`
 Replace newline with null term in-place for the given C string.
-Return 1 if newline was replaced, 0 otherwise.
 
 ## Public Data
 ### `OTP_CHARSPACE_SIZE`
