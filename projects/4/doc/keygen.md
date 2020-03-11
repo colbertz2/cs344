@@ -9,8 +9,7 @@ Integer _keylength_ : Number of characters in key. Must be greater than 0.
 "Random" key string of the specified length, terminated with newline.
 
 ## Return Value
-Integer _keylength_ : Number of characters in key.
-Returns -1 if key generation failed.
+Returns 0 if successful. Non-zero on failure.
 
 ## Notes
 + Output has 1 char more than _keylength_ (including newline)
