@@ -4,7 +4,10 @@ CLOG=log
 COMP=script -q -c "$(CC) -c -o $@ $<" $(CLOG)/$(@F)
 LINK=script -q -c "$(CC) -o $@ $^" $(CLOG)/$(@F)
 
-all: log example src/otp.o
+all: log example keygen
+
+keygen: src/keygen.c src/otp.o
+	$(LINK)
 
 src/otp.o: src/otp.c src/otp.h
 	$(COMP)
