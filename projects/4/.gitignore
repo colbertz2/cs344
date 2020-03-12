@@ -8,6 +8,7 @@ etc/*
 compile.log
 *.o
 log
+etc
 keygen
 otp_enc_d
 otp_enc
