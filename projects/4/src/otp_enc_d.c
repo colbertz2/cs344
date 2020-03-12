@@ -17,8 +17,16 @@ int main(int argc, char *argv[])
     char buffer[256];
     struct sockaddr_in serverAddress, clientAddress;
     pid_t spawnpid = -5;
+    char *ptxt, *key;
+    int sizeof_pk = 256;
 
     if (argc < 2) { fprintf(stderr,"USAGE: %s port\n", argv[0]); exit(1); } // Check usage & args
+
+    // Initialize buffers on heap to store plaintext and key
+    ptxt = calloc(sizeof_pk, sizeof(char));
+    key = calloc(sizeof_pk, sizeof(char));
+    memset(ptxt, '\0', sizeof_pk);
+    memset(key, '\0', sizeof_pk);
 
     // Set up the address struct for this process (the server)
     memset((char *)&serverAddress, '\0', sizeof(serverAddress)); // Clear out the address struct
@@ -74,16 +82,67 @@ int main(int argc, char *argv[])
                     if (charsRead < 0) error("otp_enc_d: ERROR reading from socket");
                 }
 
-                // Get the message from the client and display it
-                memset(buffer, '\0', 256);
-                charsRead = recv(establishedConnectionFD, buffer, 255, 0); // Read the client's message from the socket
-                if (charsRead < 0) error("otp_enc_d: ERROR reading from socket");
-                printf("SERVER: I received this from the client: \"%s\"\n", buffer);
+                // Receive plaintext
+                do {
+                    // Make sure ptxt and key strings are large enough to hold new data
+                    if (sizeof_pk - strlen(ptxt) < 256) {
+                        ptxt = realloc(ptxt, 2 * sizeof_pk);    // double allocated memory
+                        key = realloc(key, 2 * sizeof_pk);
+                        if (ptxt == NULL) error("otp_enc_d: ERROR realloc ptxt");
+                        if (key == NULL) error("otp_enc_d: ERROR realloc key");
+                        memset(ptxt + sizeof_pk, '\0', sizeof_pk);  // initialize new memory
+                        memset(key + sizeof_pk, '\0', sizeof_pk);
+                        sizeof_pk *= 2;
+                    }
+
+                    // Read data from socket
+                    memset(buffer, '\0', 256);
+                    charsRead = recv(establishedConnectionFD, buffer, 255, 0);
+                    if (charsRead < 0) error("otp_enc_d: ERROR reading from socket");
+                    if (charsRead == 0) {
+                        fprintf(stderr, "otp_enc_d: Socket closed unexpectedly\n"); exit(1);
+                    }
+
+                    fprintf(stderr, "otp_enc_d: received ptxt from client: \"%s\"\n", buffer);   // @DEV
+
+                    // Concat new data onto end of plaintext string
+                    strcat(ptxt, buffer);
+
+                } while (strstr(buffer, "@") == NULL);  // Loop until @ terminator is received
+
+                // Strip "@" terminator from plaintext
+                ptxt[strcspn(ptxt, "@")] = '\0';
+
+                // Send client cue to start transmitting key
+                charsRead = send(establishedConnectionFD, "0", 1, 0);
+                if (charsRead < 0) error("otp_enc_d: ERROR writing to socket");
+
+                // Receive key
+                do {
+                    // Read data from socket
+                    memset(buffer, '\0', 256);
+                    charsRead = recv(establishedConnectionFD, buffer, 255, 0);
+                    if (charsRead < 0) error("otp_enc_d: ERROR reading from socket");
+                    if (charsRead == 0) {
+                        fprintf(stderr, "otp_enc_d: Socket closed unexpectedly\n"); exit(1);
+                    }
+
+                    fprintf(stderr, "otp_enc_d: received key from client: \"%s\"\n", buffer);    // @DEV
+
+                    // Concat new data onto end of key string
+                    strcat(key, buffer);
+
+                } while (strlen(key) < strlen(ptxt));   // Loop until key is at least as long as ptxt
+
+                fprintf(stderr, "otp_enc_d: PTXT: %s\n", ptxt);
+                fprintf(stderr, "otp_enc_d: KEY:  %s\n", key);
 
                 // Send a Success message back to the client
                 charsRead = send(establishedConnectionFD, "I am the server, and I got your message", 39, 0); // Send success back
                 if (charsRead < 0) error("otp_enc_d: ERROR writing to socket");
                 close(establishedConnectionFD); // Close the existing socket which is connected to the client
+                free(ptxt);
+                free(key);
                 exit(0);
                 break;
 
@@ -97,3 +156,4 @@ int main(int argc, char *argv[])
     close(listenSocketFD); // Close the listening socket
     return 0; 
 }
+
