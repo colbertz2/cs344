@@ -5,88 +5,177 @@
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
-#include <netdb.h> 
+#include <netdb.h>
+#include <fcntl.h>
+#include "otp.h"
 
-void error(const char *msg) { perror(msg); exit(0); } // Error function used for reporting issues
+void error(const char *msg) { perror(msg); exit(5); } // Error function used for reporting issues
+
+// Shift a string n characters to the left
+// (Trunc chars at the start of the string in-place)
+void strshift(char* buffer, int n) {
+    int i;
+    if (n < 0) fprintf(stderr, "strshift: Invalid input\n");
+    if (n == 0) return;
+
+    // shift chars to the left
+    for (i = 0; i < n; i++) { 
+        if (i > strlen(buffer)) break;
+        
+        buffer[i] = buffer[n + i];
+    }
+
+    // null chars following the shifted string
+    memset(buffer + n, '\0', strlen(buffer) - n);
+}
 
 int main(int argc, char *argv[])
 {
     int socketFD, portNumber, charsWritten, charsRead, len_ptxt;
+    int ptxtFD, keyFD;
     struct sockaddr_in serverAddress;
     struct hostent* serverHostInfo;
     char buffer[256];
     
-    if (argc < 3) { fprintf(stderr,"USAGE: %s hostname port\n", argv[0]); exit(0); } // Check usage & args
+    if (argc < 4) { fprintf(stderr,"USAGE: %s plaintext key port\n", argv[0]); exit(0); } // Check usage & args
+
+    /***************************
+     * INPUT VALIDATION
+     ***************************/
+    
+    // Open input files
+    ptxtFD = open(argv[1], O_RDONLY);
+    if (ptxtFD == -1) { perror("otp_enc: Unable to open plaintext file"); exit(1); }
+
+    keyFD = open(argv[2], O_RDONLY);
+    if (keyFD == -1) { perror("otp_enc: Unable to open key file"); exit(1); }
+
+    // Check plaintext is valid
+    // @TODO
+
+    // Check key is valid
+    // @TODO
+
+    // Check key length is sufficient for plaintext
+    // @TODO
+
+
+    /*************************
+     * SERVER CONNECTION
+     *************************/
 
     // Set up the server address struct
     memset((char*)&serverAddress, '\0', sizeof(serverAddress)); // Clear out the address struct
-    portNumber = atoi(argv[2]); // Get the port number, convert to an integer from a string
+    portNumber = atoi(argv[3]); // Get the port number, convert to an integer from a string
     serverAddress.sin_family = AF_INET; // Create a network-capable socket
     serverAddress.sin_port = htons(portNumber); // Store the port number
-    serverHostInfo = gethostbyname(argv[1]); // Convert the machine name into a special form of address
-    if (serverHostInfo == NULL) { fprintf(stderr, "CLIENT: ERROR, no such host\n"); exit(0); }
+    serverHostInfo = gethostbyname("localhost"); // Convert the machine name into a special form of address
+    if (serverHostInfo == NULL) { fprintf(stderr, "otp_enc: No such host: localhost\n"); exit(2); }
     memcpy((char*)&serverAddress.sin_addr.s_addr, (char*)serverHostInfo->h_addr, serverHostInfo->h_length); // Copy in the address
 
     // Set up the socket
     socketFD = socket(AF_INET, SOCK_STREAM, 0); // Create the socket
-    if (socketFD < 0) error("CLIENT: ERROR opening socket");
+    if (socketFD < 0) {
+        fprintf(stderr, "otp_enc: Error opening socket\n");
+        exit(2);
+    }
     
     // Connect to server
-    if (connect(socketFD, (struct sockaddr*)&serverAddress, sizeof(serverAddress)) < 0) // Connect socket to address
-        error("CLIENT: ERROR connecting");
+    if (connect(socketFD, (struct sockaddr*)&serverAddress, sizeof(serverAddress)) < 0) {
+        fprintf(stderr, "otp_enc: Unable to connect to otp_enc_d on port %d\n", portNumber);
+        exit(2);
+    }
+
+
+    /**************************
+     * SERVER ROUTINE
+     **************************/
 
     // Send server my name
     memset(buffer, '\0', sizeof(buffer));
     strcpy(buffer, "otp_enc");
     charsWritten = send(socketFD, buffer, strlen(buffer), 0);
-    if (charsWritten < 0) error("CLIENT: ERROR writing to socket");
-    if (charsWritten < strlen(buffer)) printf("CLIENT: WARNING: Not all data written to socket!\n");
+    if (charsWritten < 0) error("otp_enc: Error writing to socket");
+    while (charsWritten < strlen(buffer)) {
+        strshift(buffer, strlen(buffer) - charsWritten);
+        charsWritten = send(socketFD, buffer, strlen(buffer), 0);
+        if (charsWritten < 0) error("otp_enc: Error writing to socket");
+    }
 
     // Wait for server to accept connection
     memset(buffer, '\0', sizeof(buffer));
-    charsRead = recv(socketFD, buffer, 1, 0);	// Read single char response
-    if (charsRead < 0) error("CLIENT: ERROR reading from socket");
+    charsRead = recv(socketFD, buffer, 1, 0);   // Read single char response
+    if (charsRead < 0) error("otp_enc: Error reading from socket");
     if (atoi(buffer) != 0) {
-        fprintf(stderr, "CLIENT: Unable to connect to otp_enc_d on port %d\n", portNumber);
+        fprintf(stderr, "otp_enc: Unable to connect to otp_enc_d on port %d\n", portNumber);
         exit(2);    // Return value required by specs!
     }
 
-    // Get input message from user
-    printf("CLIENT: Enter text to send to the server, and then hit enter: ");
-    memset(buffer, '\0', sizeof(buffer)); // Clear out the buffer array
-    fgets(buffer, sizeof(buffer) - 1, stdin); // Get input from the user, trunc to buffer - 1 chars, leaving \0
-    buffer[strcspn(buffer, "\n")] = '\0'; // Remove the trailing \n that fgets adds
-    len_ptxt = strlen(buffer);      // @DEV hang on to ptxt length
-
     // Send plaintext to server
-    charsWritten = send(socketFD, buffer, strlen(buffer), 0); // Write to the server
-    if (charsWritten < 0) error("CLIENT: ERROR writing to socket");
-    if (charsWritten < strlen(buffer)) printf("CLIENT: WARNING: Not all data written to socket!\n");
+    memset(buffer, '\0', sizeof(buffer));
+    len_ptxt = 0;
+    while (read(ptxtFD, buffer, sizeof(buffer) - 1) > 0) { // Read plaintext 255 bytes at a time
+        otp_strip_newline(buffer);  // Strip newline from buffer if it is there
+        
+        len_ptxt += strlen(buffer);     // Keep track of total plaintext length
+
+        charsWritten = send(socketFD, buffer, strlen(buffer), 0);   // Attempt to send whole buffer
+        if (charsWritten < 0) error("otp_enc: Error writing to socket");
+
+        while (charsWritten < strlen(buffer)) {     // Continue attempts until whole buffer has been sent
+            strshift(buffer, strlen(buffer) - charsWritten);    // Only send bytes that haven't sent already
+            charsWritten = send(socketFD, buffer, strlen(buffer), 0);
+            if (charsWritten < 0) error("otp_enc: Error writing to socket");
+        }
+
+        memset(buffer, '\0', sizeof(buffer));   // Reset buffer before next read
+    }
 
     // Send plaintext terminator @ to server
-    charsWritten = send(socketFD, "@", 1, 0);
+    do {
+        charsWritten = send(socketFD, "@", 1, 0);
+        if (charsWritten < 0) error("otp_enc: Error writing to socket");
+    } while (charsWritten < 1);
 
     // Wait for server cue to send key
     memset(buffer, '\0', sizeof(buffer));
-    charsRead = recv(socketFD, buffer, 1, 0);	// Read single char response
-    if (charsRead < 0) error("CLIENT: ERROR reading from socket");
+    charsRead = recv(socketFD, buffer, 1, 0);   // Read single char response
+    if (charsRead < 0) error("otp_enc: Error reading from socket");
 
     // Send key to server
-    memset(buffer, ' ', len_ptxt);    // @ DEV
-    charsWritten = send(socketFD, buffer, strlen(buffer), 0);
-    if (charsWritten < 0) error ("CLIENT: ERROR writing to socket");
-    if (charsWritten < strlen(buffer)) printf("CLIENT: WARNING: Not all data written to socket!\n");
+    memset(buffer, '\0', sizeof(buffer));
+    charsRead = 0;
+    while (read(keyFD, buffer, sizeof(buffer) - 1) > 0 && charsRead < len_ptxt) {
+        otp_strip_newline(buffer);      // Strip newline from buffer if it's there
+
+        charsRead += strlen(buffer);    // Temp track total length of key read from file
+
+        charsWritten = send(socketFD, buffer, strlen(buffer), 0);   // Attempt to send whole buffer
+        if (charsWritten < 0) error("otp_enc: Error writing to socket");
+
+        while (charsWritten < strlen(buffer)) {     // Continue sending bytes that fail
+            strshift(buffer, strlen(buffer) - charsWritten);    // Only send bytes that haven't sent already
+            charsWritten = send(socketFD, buffer, strlen(buffer), 0);
+            if (charsWritten < 0) error("otp_enc: Error writing to socket");
+        }
+
+        memset(buffer, '\0', sizeof(buffer));   // Reset buffer before next read
+    }
+
+    // Server will automatically stop reading key when it's length meets ptxt length
 
     // Get ciphertext back from server
     charsRead = 0;
     do {
         memset(buffer, '\0', sizeof(buffer));
         charsRead += recv(socketFD, buffer, sizeof(buffer) - 1, 0);
-        if (charsRead < 0) error("CLIENT: ERROR reading from socket");
+        if (charsRead < 0) error("otp_enc: ERROR reading from socket");
         printf("%s", buffer);
     } while (charsRead < len_ptxt);
     printf("\n");
 
     close(socketFD); // Close the socket
+    close(ptxtFD);    // Close input files
+    close(keyFD);
     return 0;
 }
