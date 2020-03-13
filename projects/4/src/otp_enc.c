@@ -51,13 +51,45 @@ int main(int argc, char *argv[])
     if (keyFD == -1) { perror("otp_enc: Unable to open key file"); exit(1); }
 
     // Check plaintext is valid
-    // @TODO
+    memset(buffer, '\0', sizeof(buffer));
+    len_ptxt = 0;
+    while (read(ptxtFD, buffer, sizeof(buffer) - 1) > 0) {
+        otp_strip_newline(buffer);
+        len_ptxt += strlen(buffer);
+        charsWritten = otp_validate(buffer);
+
+        if (charsWritten == 1) {
+            fprintf(stderr, "otp_enc: plaintext \"%s\" contains bad characters\n", argv[1]);
+            exit(1);
+        }
+
+        memset(buffer, '\0', sizeof(buffer));
+    }
 
     // Check key is valid
-    // @TODO
+    charsRead = 0;
+    while (read(keyFD, buffer, sizeof(buffer) - 1) > 0) {
+        otp_strip_newline(buffer);
+        charsRead += strlen(buffer);        // Temp track length of key
+        charsWritten = otp_validate(buffer);
+
+        if (charsWritten == 1) {
+            fprintf(stderr, "otp_enc: key \"%s\" contains bad characters\n", argv[2]);
+            exit(1);
+        }
+
+        memset(buffer, '\0', sizeof(buffer));
+    }
 
     // Check key length is sufficient for plaintext
-    // @TODO
+    if (charsRead < len_ptxt) {
+        fprintf(stderr, "otp_enc: key \"%s\" is too short\n", argv[2]);
+        exit(1);
+    }
+
+    // Seek back to start of files for reading later
+    lseek(ptxtFD, 0, SEEK_SET);
+    lseek(keyFD, 0, SEEK_SET);
 
 
     /*************************
@@ -86,6 +118,7 @@ int main(int argc, char *argv[])
         exit(2);
     }
 
+    // printf("Connected to server\n");    // @DEV
 
     /**************************
      * SERVER ROUTINE
@@ -102,6 +135,8 @@ int main(int argc, char *argv[])
         if (charsWritten < 0) error("otp_enc: Error writing to socket");
     }
 
+    // printf("Sent identification\n");    // @DEV
+
     // Wait for server to accept connection
     memset(buffer, '\0', sizeof(buffer));
     charsRead = recv(socketFD, buffer, 1, 0);   // Read single char response
@@ -110,6 +145,8 @@ int main(int argc, char *argv[])
         fprintf(stderr, "otp_enc: Unable to connect to otp_enc_d on port %d\n", portNumber);
         exit(2);    // Return value required by specs!
     }
+
+    // printf("Server accepted connection\n");     // @DEV
 
     // Send plaintext to server
     memset(buffer, '\0', sizeof(buffer));
@@ -137,6 +174,8 @@ int main(int argc, char *argv[])
         if (charsWritten < 0) error("otp_enc: Error writing to socket");
     } while (charsWritten < 1);
 
+    // printf("Finished sending plaintext\n");     // @DEV
+
     // Wait for server cue to send key
     memset(buffer, '\0', sizeof(buffer));
     charsRead = recv(socketFD, buffer, 1, 0);   // Read single char response
@@ -161,6 +200,8 @@ int main(int argc, char *argv[])
 
         memset(buffer, '\0', sizeof(buffer));   // Reset buffer before next read
     }
+
+    // printf("Finished sending key\n");       // @DEV
 
     // Server will automatically stop reading key when it's length meets ptxt length
 

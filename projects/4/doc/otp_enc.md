@@ -11,7 +11,8 @@ Socket connection: Ciphertext string
 Ciphertext string, written to stdout and terminated with newline
 
 ## Return Value
-Return 0 on success. 
+Return 0 on success.
+Return 1 on failure related to bad inputs.
 Return 2 on failure to connect to server.
 
 ## Notes

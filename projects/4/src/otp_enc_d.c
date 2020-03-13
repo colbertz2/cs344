@@ -142,7 +142,7 @@ int main(int argc, char *argv[])
                 // Encrypt plaintext with key
                 ctxt = _enc_otp(ptxt, key);
 
-                // Send a Success message back to the client
+                // Send ciphertext to client
                 charsRead = send(establishedConnectionFD, ctxt, strlen(ctxt), 0); // Send success back
                 if (charsRead < 0) error("otp_enc_d: ERROR writing to socket");
                 close(establishedConnectionFD); // Close the existing socket which is connected to the client

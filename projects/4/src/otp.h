@@ -19,3 +19,6 @@ char otp_itoc(int);
 
 // Replace newline with null term in-place for the given C string.
 void otp_strip_newline(char*);
+
+// Return 1 if any characters in the string are not part of the OTP charspace
+int otp_validate(char*);

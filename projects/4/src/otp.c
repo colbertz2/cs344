@@ -44,3 +44,16 @@ char otp_itoc(int i) {
 void otp_strip_newline(char* buffer) {
     buffer[strcspn(buffer, "\n")] = '\0';
 }
+
+// Return 1 if any characters in the string are not part of the OTP charspace
+int otp_validate(char* buffer) {
+    int i;
+
+    for (i = 0; i < strlen(buffer); i++) {
+        if (strcspn(OTP_CHARSPACE, buffer + i) >= OTP_CHARSPACE_SIZE) {
+            return 1;
+        }
+    }
+
+    return 0;
+}
