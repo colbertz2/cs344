@@ -10,6 +10,8 @@
 
 void error(const char *msg) { perror(msg); exit(1); } // Error function used for reporting issues
 
+char* _enc_otp(char* ptxt, char* key);  // OTP encryption method
+
 int main(int argc, char *argv[])
 {
     int listenSocketFD, establishedConnectionFD, portNumber, charsRead, retval;
@@ -17,7 +19,7 @@ int main(int argc, char *argv[])
     char buffer[256];
     struct sockaddr_in serverAddress, clientAddress;
     pid_t spawnpid = -5;
-    char *ptxt, *key;
+    char *ptxt, *key, *ctxt;
     int sizeof_pk = 256;
 
     if (argc < 2) { fprintf(stderr,"USAGE: %s port\n", argv[0]); exit(1); } // Check usage & args
@@ -68,7 +70,7 @@ int main(int argc, char *argv[])
                 memset(buffer, '\0', 256);
                 charsRead = recv(establishedConnectionFD, buffer, 255, 0);
                 if (charsRead < 0) error("otp_enc_d: ERROR reading from socket");
-                // printf("SERVER: New connection from %s\n", buffer);     // @ DEV
+                // printf("SERVER: New connection from %s\n", buffer);     // @DEV
                 if (strcmp(buffer, "otp_enc") != 0) {
                     // Reject connection from the client, sending it non-zero response
                     strcpy(buffer, "1");
@@ -103,7 +105,7 @@ int main(int argc, char *argv[])
                         fprintf(stderr, "otp_enc_d: Socket closed unexpectedly\n"); exit(1);
                     }
 
-                    fprintf(stderr, "otp_enc_d: received ptxt from client: \"%s\"\n", buffer);   // @DEV
+                    // fprintf(stderr, "otp_enc_d: received ptxt from client: \"%s\"\n", buffer);   // @DEV
 
                     // Concat new data onto end of plaintext string
                     strcat(ptxt, buffer);
@@ -127,22 +129,26 @@ int main(int argc, char *argv[])
                         fprintf(stderr, "otp_enc_d: Socket closed unexpectedly\n"); exit(1);
                     }
 
-                    fprintf(stderr, "otp_enc_d: received key from client: \"%s\"\n", buffer);    // @DEV
+                    // fprintf(stderr, "otp_enc_d: received key from client: \"%s\"\n", buffer);    // @DEV
 
                     // Concat new data onto end of key string
                     strcat(key, buffer);
 
                 } while (strlen(key) < strlen(ptxt));   // Loop until key is at least as long as ptxt
 
-                fprintf(stderr, "otp_enc_d: PTXT: %s\n", ptxt);
-                fprintf(stderr, "otp_enc_d: KEY:  %s\n", key);
+                // fprintf(stderr, "otp_enc_d: PTXT: %s\n", ptxt); // @DEV
+                // fprintf(stderr, "otp_enc_d: KEY:  %s\n", key);  // @DEV
+
+                // Encrypt plaintext with key
+                ctxt = _enc_otp(ptxt, key);
 
                 // Send a Success message back to the client
-                charsRead = send(establishedConnectionFD, "I am the server, and I got your message", 39, 0); // Send success back
+                charsRead = send(establishedConnectionFD, ctxt, strlen(ctxt), 0); // Send success back
                 if (charsRead < 0) error("otp_enc_d: ERROR writing to socket");
                 close(establishedConnectionFD); // Close the existing socket which is connected to the client
                 free(ptxt);
                 free(key);
+                free(ctxt);
                 exit(0);
                 break;
 
@@ -157,3 +163,25 @@ int main(int argc, char *argv[])
     return 0; 
 }
 
+// OTP encryption method (basically modular addition)
+char* _enc_otp(char* ptxt, char* key) {
+    int i, p, c, k;
+    char *ctxt;
+
+    ctxt = calloc(strlen(ptxt) + 1, sizeof(char));
+    memset(ctxt, '\0', strlen(ptxt) + 1);
+
+    for (i = 0; i < strlen(ptxt); i++) {
+        // Convert chars to int
+        p = otp_ctoi(ptxt[i]);
+        k = otp_ctoi(key[i]);
+
+        // Add p and k mod number of available vals
+        c = (p + k) % OTP_CHARSPACE_SIZE;
+
+        // Convert back to char
+        ctxt[i] = otp_itoc(c);
+    }
+
+    return ctxt;
+}

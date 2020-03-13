@@ -72,16 +72,20 @@ int main(int argc, char *argv[])
     if (charsRead < 0) error("CLIENT: ERROR reading from socket");
 
     // Send key to server
-    memset(buffer, 'k', len_ptxt);    // @ DEV
+    memset(buffer, ' ', len_ptxt);    // @ DEV
     charsWritten = send(socketFD, buffer, strlen(buffer), 0);
     if (charsWritten < 0) error ("CLIENT: ERROR writing to socket");
     if (charsWritten < strlen(buffer)) printf("CLIENT: WARNING: Not all data written to socket!\n");
 
-    // Get return message from server
-    memset(buffer, '\0', sizeof(buffer)); // Clear out the buffer again for reuse
-    charsRead = recv(socketFD, buffer, sizeof(buffer) - 1, 0); // Read data from the socket, leaving \0 at end
-    if (charsRead < 0) error("CLIENT: ERROR reading from socket");
-    printf("CLIENT: I received this from the server: \"%s\"\n", buffer);
+    // Get ciphertext back from server
+    charsRead = 0;
+    do {
+        memset(buffer, '\0', sizeof(buffer));
+        charsRead += recv(socketFD, buffer, sizeof(buffer) - 1, 0);
+        if (charsRead < 0) error("CLIENT: ERROR reading from socket");
+        printf("%s", buffer);
+    } while (charsRead < len_ptxt);
+    printf("\n");
 
     close(socketFD); // Close the socket
     return 0;
