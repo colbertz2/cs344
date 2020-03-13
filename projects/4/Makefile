@@ -4,7 +4,7 @@ CLOG=log
 COMP=script -q -c "$(CC) -c -o $@ $<" $(CLOG)/$(@F)
 LINK=script -q -c "$(CC) -o $@ $^" $(CLOG)/$(@F)
 
-all: log example keygen otp_enc_d otp_enc
+all: log keygen otp_enc_d otp_enc
 
 otp_enc: src/otp_enc.c src/otp.o
 	$(LINK)
