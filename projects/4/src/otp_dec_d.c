@@ -10,7 +10,7 @@
 
 void error(const char *msg) { perror(msg); exit(1); } // Error function used for reporting issues
 
-char* _dec_otp(char* ptxt, char* key);  // OTP decryption method
+char* _dec_otp(char* ctxt, char* key);  // OTP decryption method
 
 int main(int argc, char *argv[])
 {
@@ -25,9 +25,9 @@ int main(int argc, char *argv[])
     if (argc < 2) { fprintf(stderr,"USAGE: %s port\n", argv[0]); exit(1); } // Check usage & args
 
     // Initialize buffers on heap to store plaintext and key
-    ptxt = calloc(sizeof_pk, sizeof(char));
+    ctxt = calloc(sizeof_pk, sizeof(char));
     key = calloc(sizeof_pk, sizeof(char));
-    memset(ptxt, '\0', sizeof_pk);
+    memset(ctxt, '\0', sizeof_pk);
     memset(key, '\0', sizeof_pk);
 
     // Set up the address struct for this process (the server)
@@ -87,12 +87,12 @@ int main(int argc, char *argv[])
                 // Receive plaintext
                 do {
                     // Make sure ptxt and key strings are large enough to hold new data
-                    if (sizeof_pk - strlen(ptxt) < 256) {
-                        ptxt = realloc(ptxt, 2 * sizeof_pk);    // double allocated memory
+                    if (sizeof_pk - strlen(ctxt) < 256) {
+                        ctxt = realloc(ctxt, 2 * sizeof_pk);    // double allocated memory
                         key = realloc(key, 2 * sizeof_pk);
-                        if (ptxt == NULL) error("otp_dec_d: ERROR realloc ptxt");
+                        if (ctxt == NULL) error("otp_dec_d: ERROR realloc ctxt");
                         if (key == NULL) error("otp_dec_d: ERROR realloc key");
-                        memset(ptxt + sizeof_pk, '\0', sizeof_pk);  // initialize new memory
+                        memset(ctxt + sizeof_pk, '\0', sizeof_pk);  // initialize new memory
                         memset(key + sizeof_pk, '\0', sizeof_pk);
                         sizeof_pk *= 2;
                     }
@@ -105,15 +105,15 @@ int main(int argc, char *argv[])
                         fprintf(stderr, "otp_dec_d: Socket closed unexpectedly\n"); exit(1);
                     }
 
-                    // fprintf(stderr, "otp_dec_d: received ptxt from client: \"%s\"\n", buffer);   // @DEV
+                    // fprintf(stderr, "otp_dec_d: received ctxt from client: \"%s\"\n", buffer);   // @DEV
 
                     // Concat new data onto end of plaintext string
-                    strcat(ptxt, buffer);
+                    strcat(ctxt, buffer);
 
                 } while (strstr(buffer, "@") == NULL);  // Loop until @ terminator is received
 
                 // Strip "@" terminator from plaintext
-                ptxt[strcspn(ptxt, "@")] = '\0';
+                ctxt[strcspn(ctxt, "@")] = '\0';
 
                 // Send client cue to start transmitting key
                 charsRead = send(establishedConnectionFD, "0", 1, 0);
@@ -134,16 +134,18 @@ int main(int argc, char *argv[])
                     // Concat new data onto end of key string
                     strcat(key, buffer);
 
-                } while (strlen(key) < strlen(ptxt));   // Loop until key is at least as long as ptxt
+                } while (strlen(key) < strlen(ctxt));   // Loop until key is at least as long as ctxt
 
-                fprintf(stderr, "otp_dec_d: PTXT: %s\n", ptxt); // @DEV
-                fprintf(stderr, "otp_dec_d: KEY:  %s\n", key);  // @DEV
+                // fprintf(stderr, "otp_dec_d: CTXT: %s\n", ctxt); // @DEV
+                // fprintf(stderr, "otp_dec_d: KEY:  %s\n", key);  // @DEV
 
-                // Encrypt plaintext with key
-                ctxt = _dec_otp(ptxt, key);
+                // Decrypt plaintext with key
+                ptxt = _dec_otp(ctxt, key);
+
+                // fprintf(stderr, "otp_dec_d: PTXT: %s\n", ptxt); // @DEV
 
                 // Send ciphertext to client
-                charsRead = send(establishedConnectionFD, ctxt, strlen(ctxt), 0); // Send success back
+                charsRead = send(establishedConnectionFD, ptxt, strlen(ptxt), 0); // Send success back
                 if (charsRead < 0) error("otp_dec_d: ERROR writing to socket");
                 close(establishedConnectionFD); // Close the existing socket which is connected to the client
                 free(ptxt);
@@ -164,24 +166,26 @@ int main(int argc, char *argv[])
 }
 
 // OTP decryption method (basically modular addition)
-char* _dec_otp(char* ptxt, char* key) {
+char* _dec_otp(char* ctxt, char* key) {
     int i, p, c, k;
-    char *ctxt;
+    char *ptxt;
 
-    ctxt = calloc(strlen(ptxt) + 1, sizeof(char));
-    memset(ctxt, '\0', strlen(ptxt) + 1);
+    ptxt = calloc(strlen(ctxt) + 1, sizeof(char));
+    memset(ptxt, '\0', strlen(ctxt) + 1);
 
-    for (i = 0; i < strlen(ptxt); i++) {
+    for (i = 0; i < strlen(ctxt); i++) {
         // Convert chars to int
-        p = otp_ctoi(ptxt[i]);
+        c = otp_ctoi(ctxt[i]);
         k = otp_ctoi(key[i]);
 
-        // Add p and k mod number of available vals
-        c = (p + k) % OTP_CHARSPACE_SIZE;
+        // Add k to c, mod size of charspace
+        p = c - k;
+        if (p < 0) p += OTP_CHARSPACE_SIZE;
+        p = p % OTP_CHARSPACE_SIZE;
 
         // Convert back to char
-        ctxt[i] = otp_itoc(c);
+        ptxt[i] = otp_itoc(p);
     }
 
-    return ctxt;
+    return ptxt;
 }

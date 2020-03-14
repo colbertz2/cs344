@@ -31,35 +31,35 @@ void strshift(char* buffer, int n) {
 
 int main(int argc, char *argv[])
 {
-    int socketFD, portNumber, charsWritten, charsRead, len_ptxt;
-    int ptxtFD, keyFD;
+    int socketFD, portNumber, charsWritten, charsRead, len_ctxt;
+    int ctxtFD, keyFD;
     struct sockaddr_in serverAddress;
     struct hostent* serverHostInfo;
     char buffer[256];
     
-    if (argc < 4) { fprintf(stderr,"USAGE: %s plaintext key port\n", argv[0]); exit(0); } // Check usage & args
+    if (argc < 4) { fprintf(stderr,"USAGE: %s ciphertext key port\n", argv[0]); exit(0); } // Check usage & args
 
     /***************************
      * INPUT VALIDATION
      ***************************/
     
     // Open input files
-    ptxtFD = open(argv[1], O_RDONLY);
-    if (ptxtFD == -1) { perror("otp_dec: Unable to open plaintext file"); exit(1); }
+    ctxtFD = open(argv[1], O_RDONLY);
+    if (ctxtFD == -1) { perror("otp_dec: Unable to open ciphertext file"); exit(1); }
 
     keyFD = open(argv[2], O_RDONLY);
     if (keyFD == -1) { perror("otp_dec: Unable to open key file"); exit(1); }
 
-    // Check plaintext is valid
+    // Check ciphertext is valid
     memset(buffer, '\0', sizeof(buffer));
-    len_ptxt = 0;
-    while (read(ptxtFD, buffer, sizeof(buffer) - 1) > 0) {
+    len_ctxt = 0;
+    while (read(ctxtFD, buffer, sizeof(buffer) - 1) > 0) {
         otp_strip_newline(buffer);
-        len_ptxt += strlen(buffer);
+        len_ctxt += strlen(buffer);
         charsWritten = otp_validate(buffer);
 
         if (charsWritten == 1) {
-            fprintf(stderr, "otp_dec: plaintext \"%s\" contains bad characters\n", argv[1]);
+            fprintf(stderr, "otp_dec: ciphertext \"%s\" contains bad characters\n", argv[1]);
             exit(1);
         }
 
@@ -81,14 +81,14 @@ int main(int argc, char *argv[])
         memset(buffer, '\0', sizeof(buffer));
     }
 
-    // Check key length is sufficient for plaintext
-    if (charsRead < len_ptxt) {
+    // Check key length is sufficient for ciphertext
+    if (charsRead < len_ctxt) {
         fprintf(stderr, "otp_dec: key \"%s\" is too short\n", argv[2]);
         exit(1);
     }
 
     // Seek back to start of files for reading later
-    lseek(ptxtFD, 0, SEEK_SET);
+    lseek(ctxtFD, 0, SEEK_SET);
     lseek(keyFD, 0, SEEK_SET);
 
 
@@ -148,13 +148,13 @@ int main(int argc, char *argv[])
 
     // printf("Server accepted connection\n");     // @DEV
 
-    // Send plaintext to server
+    // Send ciphertext to server
     memset(buffer, '\0', sizeof(buffer));
-    len_ptxt = 0;
-    while (read(ptxtFD, buffer, sizeof(buffer) - 1) > 0) { // Read plaintext 255 bytes at a time
+    len_ctxt = 0;
+    while (read(ctxtFD, buffer, sizeof(buffer) - 1) > 0) { // Read ciphertext 255 bytes at a time
         otp_strip_newline(buffer);  // Strip newline from buffer if it is there
         
-        len_ptxt += strlen(buffer);     // Keep track of total plaintext length
+        len_ctxt += strlen(buffer);     // Keep track of total ciphertext length
 
         charsWritten = send(socketFD, buffer, strlen(buffer), 0);   // Attempt to send whole buffer
         if (charsWritten < 0) error("otp_dec: Error writing to socket");
@@ -168,13 +168,13 @@ int main(int argc, char *argv[])
         memset(buffer, '\0', sizeof(buffer));   // Reset buffer before next read
     }
 
-    // Send plaintext terminator @ to server
+    // Send ciphertext terminator @ to server
     do {
         charsWritten = send(socketFD, "@", 1, 0);
         if (charsWritten < 0) error("otp_dec: Error writing to socket");
     } while (charsWritten < 1);
 
-    // printf("Finished sending plaintext\n");     // @DEV
+    // printf("Finished sending ciphertext\n");     // @DEV
 
     // Wait for server cue to send key
     memset(buffer, '\0', sizeof(buffer));
@@ -184,7 +184,7 @@ int main(int argc, char *argv[])
     // Send key to server
     memset(buffer, '\0', sizeof(buffer));
     charsRead = 0;
-    while (read(keyFD, buffer, sizeof(buffer) - 1) > 0 && charsRead < len_ptxt) {
+    while (read(keyFD, buffer, sizeof(buffer) - 1) > 0 && charsRead < len_ctxt) {
         otp_strip_newline(buffer);      // Strip newline from buffer if it's there
 
         charsRead += strlen(buffer);    // Temp track total length of key read from file
@@ -203,7 +203,7 @@ int main(int argc, char *argv[])
 
     // printf("Finished sending key\n");       // @DEV
 
-    // Server will automatically stop reading key when it's length meets ptxt length
+    // Server will automatically stop reading key when it's length meets ctxt length
 
     // Get ciphertext back from server
     charsRead = 0;
@@ -212,11 +212,11 @@ int main(int argc, char *argv[])
         charsRead += recv(socketFD, buffer, sizeof(buffer) - 1, 0);
         if (charsRead < 0) error("otp_dec: ERROR reading from socket");
         printf("%s", buffer);
-    } while (charsRead < len_ptxt);
+    } while (charsRead < len_ctxt);
     printf("\n");
 
     close(socketFD); // Close the socket
-    close(ptxtFD);    // Close input files
+    close(ctxtFD);    // Close input files
     close(keyFD);
     return 0;
 }

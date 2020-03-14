@@ -136,8 +136,8 @@ int main(int argc, char *argv[])
 
                 } while (strlen(key) < strlen(ptxt));   // Loop until key is at least as long as ptxt
 
-                fprintf(stderr, "otp_enc_d: PTXT: %s\n", ptxt); // @DEV
-                fprintf(stderr, "otp_enc_d: KEY:  %s\n", key);  // @DEV
+                // fprintf(stderr, "otp_enc_d: PTXT: %s\n", ptxt); // @DEV
+                // fprintf(stderr, "otp_enc_d: KEY:  %s\n", key);  // @DEV
 
                 // Encrypt plaintext with key
                 ctxt = _enc_otp(ptxt, key);
