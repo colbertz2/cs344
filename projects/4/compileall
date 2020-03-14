@@ -1,0 +1,7 @@
+#!/bin/bash
+gcc -c -o src/otp.o src/otp.c
+gcc -o keygen src/keygen.c src/otp.o
+gcc -o otp_enc_d src/otp_enc_d.c src/otp.o
+gcc -o otp_enc src/otp_enc.c src/otp.o
+gcc -o otp_dec_d src/otp_dec_d.c src/otp.o
+gcc -o otp_dec src/otp_dec.c src/otp.o
